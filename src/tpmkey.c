@@ -35,9 +35,6 @@ static const char efivar_part[] = "/sys/firmware/efi/efivars";
 // temporary mount point
 #define MOUNT_POINT "/mnt"
 
-// ESP is always vfat
-#define FILE_SYSTEM "vfat"
-
 // key name that system-cryptsetup will look for
 #define KEYCTL_KEYNAME "cryptsetup"
 
@@ -77,9 +74,18 @@ static int read_one_line(const char* filename, char* buffer, size_t* length) {
 static bool parse_cmd(const char* keyname, char** option) {
     size_t len = MAX_COMMANDLINE;
     char buffer[len];
-
-    if (read_one_line(COMMAND_LINE, buffer, &len) < 0) {
-        return false;
+   
+    if (getuid() == 0) {
+        if (read_one_line(COMMAND_LINE, buffer, &len) < 0) {
+            return false;
+        }
+    } else {
+        const char* fake_cmdline = NULL;
+        if ((fake_cmdline = getenv("FAKE_CMDLINE")) != NULL) {
+            strncpy(buffer, fake_cmdline, len);
+        } else {
+            assert(false);
+        }
     }
     
     size_t i, j;
@@ -156,7 +162,21 @@ static bool efivar_read_var(const EFI_GUID* guid, const char* name, char* buffer
     return true;
 }
 
-static bool find_device(struct udev* udev, const char* uuid, char* dev_name, size_t length) {
+static const char* get_udev_type(const char* type) {
+    if (strcmp("PARTUUID", type) == 0) {
+        return "ID_PART_ENTRY_UUID";
+    } else if (strcmp("UUID", type) == 0) {
+        return "ID_FS_UUID";
+    } else if (strcmp("SERIAL", type) == 0) {
+        return "ID_SERIAL_SHORT";
+    } else if (strcmp("REVISION", type) == 0) {
+        return "ID_REVISION";
+    } else {
+        return type;
+    }
+}
+
+static bool find_device(struct udev* udev, const char* udev_type, const char* uuid, struct udev_device** device) {
     bool ret = false;
     struct udev_enumerate* e = udev_enumerate_new(udev);
     if (!e) {
@@ -165,35 +185,40 @@ static bool find_device(struct udev* udev, const char* uuid, char* dev_name, siz
     }
 
     udev_enumerate_add_match_subsystem(e, "block");
-    udev_enumerate_add_match_property(e, "ID_PART_ENTRY_UUID", uuid);
+    udev_enumerate_add_match_property(e, udev_type, uuid);
 
     if (udev_enumerate_scan_devices(e) < 0) {
         fprintf(stderr, "Could not run udev_enumerate_scan: %m\n");
         goto cleanup_enum;
     }
 
+    struct udev_device* dev;
     struct udev_list_entry* list = udev_enumerate_get_list_entry(e);
     struct udev_list_entry* le;
-    const char* path = NULL;
+    const char* tmp = NULL;
     udev_list_entry_foreach(le, list) {
-        if (path) {
-            fprintf(stderr, "More than one matching partition in system\n");
-            goto cleanup_enum;
+        tmp = udev_list_entry_get_name(le);
+        if (!tmp)
+            continue;
+        dev = udev_device_new_from_syspath(udev, tmp);
+        if (!dev) {
+            fprintf(stderr, "Could not get udev_device from /sys path: %m\n");
+            continue;
         }
-        path = udev_list_entry_get_name(le);
-    }
-    if (!path)
-        goto cleanup_enum;
-    struct udev_device* dev = udev_device_new_from_syspath(udev, path);
-    if (!dev) {
-        fprintf(stderr, "Could not get udev_device from /sys path: %m\n");
-        goto cleanup_enum;
+    
+        tmp = udev_device_get_property_value(dev, "ID_FS_USAGE");
+        if (tmp && strcmp(tmp, "filesystem") == 0) {
+            break;
+        } else {
+            udev_device_unref(dev);
+            dev = NULL;
+        }
     }
 
-    path = udev_device_get_devnode(dev);
-    strncpy(dev_name, path, length);
-    udev_device_unref(dev);
-    ret = true;
+    if (dev) {
+        *device = dev;
+        ret = true;
+    }
 
 cleanup_enum:
     udev_enumerate_unref(e);
@@ -204,11 +229,13 @@ cleanup_udev:
 /**
  * Watch for device to appear
  */
-static bool wait_for_device(const char* uuid, char* dev_name, size_t length) {
+static bool wait_for_device(const char* type, const char* uuid, char* dev_name, size_t length, char* filesystem) {
     struct pollfd fds[1];
     int pol;
     bool found = false;
     bool ret = false;
+
+    const char* udev_type = get_udev_type(type);
 
     struct udev* udev = udev_new();
     if (!udev) {
@@ -233,14 +260,13 @@ static bool wait_for_device(const char* uuid, char* dev_name, size_t length) {
         goto cleanup_mon;
     }
     
+    struct udev_device* dev;
     while(!found) {
-        struct udev_device* dev = udev_monitor_receive_device(mon);
+        dev = udev_monitor_receive_device(mon);
         if (!dev) {
-            //printf("Noting recieved\n");
-            if (find_device(udev, uuid, dev_name, length)) {
-                //printf("Found device, before poll: %s\n", dev_name);
+            if (find_device(udev, udev_type, uuid, &dev))
                 break;
-            }
+
             pol = poll(fds, 1, 2);
             if (pol < 0) {
                 fprintf(stderr, "Could not poll on udev_monitor: %m\n");
@@ -252,25 +278,30 @@ static bool wait_for_device(const char* uuid, char* dev_name, size_t length) {
         const char* subsystem = udev_device_get_property_value(dev, "SUBSYSTEM");
         if (!subsystem) {
             udev_device_unref(dev);
-            //printf("Monitor: no subsystem.\n");
-            continue;
-        }
-        if (strcmp(subsystem, "block") != 0) {
-            udev_device_unref(dev);
-            //printf("Monitor: %s\n", subsystem);
             continue;
         }
 
-        const char* p_uuid = udev_device_get_property_value(dev, "ID_PART_ENTRY_UUID");
-        if (!p_uuid)
+        const char* usage = udev_device_get_property_value(dev, "ID_FS_USAGE");
+        if (strcmp(usage, "filesystem") != 0) {
+            udev_device_unref(dev);
             continue;
-        if (strcmp(uuid, p_uuid) == 0) {
-            strncpy(dev_name, udev_device_get_devnode(dev), length);
-            found = true;
         }
-        //printf("Monitor: %s\n", p_uuid);
+
+        const char* p_uuid = udev_device_get_property_value(dev, udev_type);
+        if (!p_uuid) {
+            udev_device_unref(dev);
+            continue;
+        }
+
+        if (strcmp(uuid, p_uuid) == 0)
+            break;
+    
         udev_device_unref(dev);
     }
+
+    strncpy(dev_name, udev_device_get_devnode(dev), length);
+    strcpy(filesystem, udev_device_get_property_value(dev, "ID_FS_TYPE"));
+    udev_device_unref(dev);
 
     ret = true;
 cleanup_mon:
@@ -331,29 +362,57 @@ int main () {
     char uuid[len];
     char device[255];
     int ret = 1;
+    char filesystem[32];
+
+    char *alloc = NULL;
 
     char *keyfilename = NULL;
-    parse_cmd("rd.tpm.key", &keyfilename);
-    if (!keyfilename)
+    char *device_name = NULL;
+    char *type = NULL;
+    parse_cmd("rd.tpm.key", &alloc);
+    if (!alloc)
         return 0;
+    char* tmp = NULL;
+    if ((tmp = strchr(alloc, ':')) != NULL) {
+        device_name = alloc;
+        *tmp = '\0';
+        keyfilename = tmp+1;
 
-    if (!efivar_read_var(&loader_guid, "LoaderDevicePartUUID", uuid, &len)) {
-        fprintf(stderr, "Could not read EFI variable\n");
-        goto cleanup;
+        if ((tmp = strchr(alloc, '=')) != NULL) {
+            type = device_name;
+            *tmp = '\0';
+            device_name = tmp+1;
+        }
+    } else {
+         keyfilename = alloc;
     }
 
-    // udev always produces lowercase uuid filenames for GPT partitions
-    for (size_t i = 0; i < len && uuid[i]; i++) {
-        uuid[i] = tolower(uuid[i]);
+    if (!type) {
+        static char uuid_type[] = "PARTUUID";
+        type = uuid_type;
     }
 
-    bool wait = true;
-
-    // no device yet, we need to wait
-    if (wait) {
-        if (!wait_for_device(uuid, device, sizeof(device))) {
+    if (!device_name) {
+        if (!efivar_read_var(&loader_guid, "LoaderDevicePartUUID", uuid, &len)) {
+            fprintf(stderr, "Could not read EFI variable\n");
             goto cleanup;
         }
+
+        for (size_t i = 0; i < len && uuid[i]; i++) {
+            uuid[i] = tolower(uuid[i]);
+        }
+    } else {
+        strncpy(uuid, device_name, len);
+    }
+
+    if (!wait_for_device(type, uuid, device, sizeof(device), filesystem))
+        goto cleanup;
+
+    if (getuid() != 0) {
+        fprintf(stderr, "mount -o ro,noexec -t %s %s %s\n"
+            "tpm_unsealdata -z -i %3$s/%s | keyctl padd user \"%s\" @u\n"
+            "umount -l %3$s\n", filesystem, device, MOUNT_POINT, keyfilename, KEYCTL_KEYNAME);
+        goto cleanup;
     }
 
     if (mkdir(MOUNT_POINT, 0777) != 0) {
@@ -365,7 +424,7 @@ int main () {
         }
     }
     
-    if (mount(device, MOUNT_POINT, FILE_SYSTEM, MS_RDONLY, NULL) != 0) {
+    if (mount(device, MOUNT_POINT, filesystem, MS_RDONLY | MS_NOEXEC, NULL) != 0) {
         fprintf(stderr, "Could not mount ESP: %m\n");
         goto cleanup;
     }
@@ -387,6 +446,6 @@ int main () {
     signal(SIGTERM, SIG_DFL);
 
 cleanup:
-    free(keyfilename);
+    free(alloc);
     return ret;
 }

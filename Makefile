@@ -1,4 +1,4 @@
-LIBRARIES = -lkeyutils -ltspi -ltpm_unseal -ludev
+LIBRARIES = -lkeyutils -ltpm_unseal -ludev
 INCLUDES =
 
 # source files
