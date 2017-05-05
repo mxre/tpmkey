@@ -1,0 +1,15 @@
+/*.json
+
+obj/
+doc/html
+*.o
+*.d
+tpmkey
+
+*~
+*.bak
+
+# gtag
+GPATH
+GRTAGS
+GTAGS

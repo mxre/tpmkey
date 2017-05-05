@@ -1,0 +1,8 @@
+[Unit]
+Description=Manager for Trusted Computing resources
+After=dev-tpm0.device
+Requires=dev-tpm0.device
+
+[Service]
+User=tss
+ExecStart=/usr/bin/tcsd -f -c /etc/tcsd.conf
