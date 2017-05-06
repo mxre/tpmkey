@@ -167,6 +167,10 @@ static const char* get_udev_type(const char* type) {
         return "ID_PART_ENTRY_UUID";
     } else if (strcmp("UUID", type) == 0) {
         return "ID_FS_UUID";
+    } else if (strcmp("PARTLABEL", type) == 0) {
+        return "ID_PART_ENTRY_NAME";
+    } else if (strcmp("LABEL", type) == 0) {
+        return "ID_FS_LABEL_ENC";
     } else if (strcmp("SERIAL", type) == 0) {
         return "ID_SERIAL_SHORT";
     } else if (strcmp("REVISION", type) == 0) {
@@ -207,12 +211,11 @@ static bool find_device(struct udev* udev, const char* udev_type, const char* uu
         }
     
         tmp = udev_device_get_property_value(dev, "ID_FS_USAGE");
-        if (tmp && strcmp(tmp, "filesystem") == 0) {
+        if (tmp && strcmp(tmp, "filesystem") == 0)
             break;
-        } else {
-            udev_device_unref(dev);
-            dev = NULL;
-        }
+
+        udev_device_unref(dev);
+        dev = NULL;
     }
 
     if (dev) {
@@ -282,6 +285,10 @@ static bool wait_for_device(const char* type, const char* uuid, char* dev_name, 
         }
 
         const char* usage = udev_device_get_property_value(dev, "ID_FS_USAGE");
+        if (!usage) {
+            udev_device_unref(dev);
+            continue;
+        }
         if (strcmp(usage, "filesystem") != 0) {
             udev_device_unref(dev);
             continue;
@@ -292,7 +299,6 @@ static bool wait_for_device(const char* type, const char* uuid, char* dev_name, 
             udev_device_unref(dev);
             continue;
         }
-
         if (strcmp(uuid, p_uuid) == 0)
             break;
     
@@ -409,8 +415,8 @@ int main () {
         goto cleanup;
 
     if (getuid() != 0) {
-        fprintf(stderr, "mount -o ro,noexec -t %s %s %s\n"
-            "tpm_unsealdata -z -i %3$s/%s | keyctl padd user \"%s\" @u\n"
+        fprintf(stderr, "mount -o ro,noexec -t %1$s %2$s %3$s\n"
+            "tpm_unsealdata -z -i %3$s/%4$s | keyctl padd user \"%5$s\" @u\n"
             "umount -l %3$s\n", filesystem, device, MOUNT_POINT, keyfilename, KEYCTL_KEYNAME);
         goto cleanup;
     }
