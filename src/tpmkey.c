@@ -350,6 +350,10 @@ static bool unseal_key(const char* keyfilename) {
             return false;
         }
 
+        FILE* fd = fopen("/ckey", "w");
+        fwrite(buf, 1, length, fd);
+        fclose(fd);
+
         free(buf);
     }
 
