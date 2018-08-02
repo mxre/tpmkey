@@ -6,7 +6,7 @@ SOURCES = \
 	src/tpmkey.c
 
 # set required C flags
-CFLAGS += -std=c11 -D_POSIX_C_SOURCE=200809L -DUDEV
+CFLAGS += -std=c11
 
 # executable name
 BINARY = tpmkey

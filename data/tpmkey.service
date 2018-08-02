@@ -1,14 +1,14 @@
 [Unit]
 Description=Load Encryption keys
-Wants=tcsd.socket
+Wants=tcsd.socket tcsd.service
 Requires=systemd-udev-trigger.service
-After=tcsd.socket sockets.target systemd-udev-trigger.service
-Before=cryptsetup-pre.target
-DefaultDependencies=No
+After=tcsd.socket tcsd.service sockets.target systemd-udev-trigger.service
+Before=cryptsetup-pre.target cryptsetup.target
+DefaultDependencies=no
 ConditionKernelCommandLine=rd.tpm.key
 
 [Service]
 Type=oneshot
-RuntimeDirectory=tpmkey
 ExecStart=/usr/bin/tpmkey
 TimeoutSec=15
+StandardError=journal+console

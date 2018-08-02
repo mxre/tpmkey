@@ -1,5 +1,10 @@
 {
-    "files.associations": {
-        "cstring": "cpp"
-    }
+  "files.associations": {
+    "cstring": "cpp",
+    "list": "c"
+  },
+  "c-cpp-flylint.language": "c",
+  "c-cpp-flylint.standard": [
+    "c11"
+  ]
 }

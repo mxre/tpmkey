@@ -1,3 +1,5 @@
+ #define _POSIX_C_SOURCE 200809L 
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -52,9 +54,11 @@ static int read_one_line(const char* filename, char* buffer, size_t* length) {
     if (!fp)
         return -errno;
 
-    if (!fgets(buffer, *length, fp)) {
-        if (ferror(fp))
+    if (!fgets(buffer, (int) *length, fp)) {
+        if (ferror(fp)) {
+            fclose(fp);
             return  errno > 0 ? -errno : -EIO;
+        }
     }
     
     for (size_t i = 0; i < strlen(buffer); i++) {
@@ -97,7 +101,7 @@ static bool parse_cmd(const char* keyname, char** option) {
         }
     }
 
-    for (j = i + strlen(keyname); buffer[j] != ' ' && j < len; j++);
+    for (j = i + strlen(keyname); j < len && buffer[j] != ' '; j++);
 
     *option = strndup(buffer + i + strlen(keyname) + 1, j - i - strlen(keyname) - 1);
     return true;
@@ -146,14 +150,13 @@ static bool efivar_read_var(const EFI_GUID* guid, const char* name, char* buffer
     size_t u8_len = 0;
     // skip type field, one uint32
     for (size_t i = 2; i < *length; i++) {
-        ssize_t len = 0;
+        size_t len = 0;
         len = c16rtomb(buffer + u8_len, char_buffer[i], &state);
         if (len == 0)
             continue;
-        if (len > 0) {
-            u8_len += len;
-        } else
+        else if (len == (size_t) -1)
             break;
+        u8_len += len;
     }
 
     *length = u8_len;
@@ -162,6 +165,7 @@ static bool efivar_read_var(const EFI_GUID* guid, const char* name, char* buffer
     return true;
 }
 
+// convert default fstab directives to UDEV type field names
 static const char* get_udev_type(const char* type) {
     if (strcmp("PARTUUID", type) == 0) {
         return "ID_PART_ENTRY_UUID";
@@ -183,6 +187,12 @@ static const char* get_udev_type(const char* type) {
 static bool find_device(struct udev* udev, const char* udev_type, const char* uuid, struct udev_device** device) {
     bool ret = false;
     struct udev_enumerate* e = udev_enumerate_new(udev);
+    
+    struct udev_device* dev = NULL;
+    struct udev_list_entry* list = NULL;
+    struct udev_list_entry* le;
+    const char* tmp = NULL;
+
     if (!e) {
         fprintf(stderr, "Could not create udev_enumerate: %m\n");
         goto cleanup_udev;
@@ -196,10 +206,7 @@ static bool find_device(struct udev* udev, const char* udev_type, const char* uu
         goto cleanup_enum;
     }
 
-    struct udev_device* dev;
-    struct udev_list_entry* list = udev_enumerate_get_list_entry(e);
-    struct udev_list_entry* le;
-    const char* tmp = NULL;
+    list = udev_enumerate_get_list_entry(e);
     udev_list_entry_foreach(le, list) {
         tmp = udev_list_entry_get_name(le);
         if (!tmp)
@@ -263,13 +270,17 @@ static bool wait_for_device(const char* type, const char* uuid, char* dev_name, 
         goto cleanup_mon;
     }
     
-    struct udev_device* dev;
+    struct udev_device* dev = NULL;
     while(!found) {
+    	// receive any new device from UDEV
         dev = udev_monitor_receive_device(mon);
+        // there are no new devices
         if (!dev) {
+        	// look for existing devices, that match
             if (find_device(udev, udev_type, uuid, &dev))
                 break;
 
+			// wait for new devives on the monitor
             pol = poll(fds, 1, 2);
             if (pol < 0) {
                 fprintf(stderr, "Could not poll on udev_monitor: %m\n");
@@ -343,23 +354,25 @@ static bool unseal_key(const char* keyfilename) {
     }
 
     if (buf) {
-        key_serial_t kid = add_key("user", KEYCTL_KEYNAME, buf, length, KEY_SPEC_USER_KEYRING);
+        key_serial_t kid = add_key("user", KEYCTL_KEYNAME, buf, (size_t) length, KEY_SPEC_USER_KEYRING);
         if (kid < 0) {
             fprintf(stderr, "Could not insert key in keyring: %m\n");
             free(buf);
             return false;
         }
 
+#if 0
         FILE* fd = fopen("/ckey", "w");
         fwrite(buf, 1, length, fd);
         fclose(fd);
-
+#endif
         free(buf);
     }
 
     return true;
 }
 
+__attribute__((noreturn))
 static void signal_abort(int sig) {
     if (umount2(MOUNT_POINT, MNT_DETACH) != 0) {
         fprintf(stderr, "Could not unmount ESP: %m\n");
@@ -369,7 +382,7 @@ static void signal_abort(int sig) {
 
 int main () {
     size_t len = 40;
-    char uuid[len];
+    char uuid[40];
     char device[255];
     int ret = 1;
     char filesystem[32];
@@ -409,7 +422,7 @@ int main () {
         }
 
         for (size_t i = 0; i < len && uuid[i]; i++) {
-            uuid[i] = tolower(uuid[i]);
+            uuid[i] = (char) tolower((int) uuid[i]);
         }
     } else {
         strncpy(uuid, device_name, len);
@@ -449,7 +462,7 @@ int main () {
 
     if (umount2(MOUNT_POINT, MNT_DETACH) != 0) {
         fprintf(stderr, "Could not unmount ESP: %m\n");
-    }
+    } 
 
     // normal behaviour
     signal(SIGABRT, SIG_DFL);

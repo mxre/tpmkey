@@ -31,7 +31,8 @@ EOF
     add_systemd_drop_in tcsd.service initrd << EOF
 [Unit]
 DefaultDependencies=no
-After=systemd-modules-loaded.service
+Wants=tcsd.socket
+After=systemd-modules-loaded.service tcsd.socket
 Before=sysinit.target
 EOF
 
