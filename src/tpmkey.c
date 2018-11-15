@@ -1,5 +1,3 @@
- #define _POSIX_C_SOURCE 200809L 
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -8,6 +6,7 @@
 #include <uchar.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <assert.h>
 #include <signal.h>
 #include <keyutils.h>
@@ -16,9 +15,7 @@
 #include <sys/stat.h>
 #include <sys/mount.h>
 
-#define BOOL bool
-#include <tpm_tools/tpm_unseal.h>
-
+#include <tpmfunc.h>
 
 // EFI GUID type
 typedef struct {          
@@ -333,40 +330,63 @@ cleanup_udev:
  */
 static bool unseal_key(const char* keyfilename) {
     char filename[100];
-    uint8_t* buf = NULL;
-    int length = 0;
-    int err;
+    uint8_t* blob = NULL;
+    uint8_t buffer[100] = { 0 };
+    uint32_t blob_length = 0;
+    uint32_t length = 100;
+    uint32_t err;
+    int fd;
+    struct statx stat = { 0 };
+    uint32_t parent_key_handle = TPM_KH_SRK;
+    // well known password
+    unsigned char pass[20] = {0};
 
     if (keyfilename[0] == '/')
         sprintf(filename, "%s%s", MOUNT_POINT, keyfilename);
     else
         sprintf(filename, "%s/%s", MOUNT_POINT, keyfilename);
 
-    err = tpmUnsealFile(filename, &buf, &length, true);
-    if (err != 0) {
-        fprintf(stderr, "Could not unseal key from '%s': %s\n", filename, tpmUnsealStrerror(err));
-        return false;
-    }
-    if (length >= 100) {
-        fprintf(stderr, "Key is too long, systemd does not like that\n");
-        free(buf);
+    fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        fprintf(stderr, "Could not open key from '%s': %m\n", filename);
         return false;
     }
 
-    if (buf) {
-        key_serial_t kid = add_key("user", KEYCTL_KEYNAME, buf, (size_t) length, KEY_SPEC_USER_KEYRING);
+    statx(fd, "", AT_EMPTY_PATH, STATX_SIZE, &stat);
+    blob_length = stat.stx_size;
+    blob = (uint8_t*) malloc(blob_length);
+
+    if (read(fd, blob, blob_length) < 0) {
+        fprintf(stderr, "Could not read key from '%s': %m\n", filename);
+        close(fd);
+        free(blob);
+        return false;
+    }
+    close(fd);
+
+    err = TPM_Unseal(parent_key_handle, pass, NULL, blob, blob_length, buffer, &length);
+    free(blob);
+
+    if (length >= 100) {
+        fprintf(stderr, "Key is too long, systemd does not like that\n");
+        return false;
+    }
+
+    if (!err) {
+        key_serial_t kid = add_key("user", KEYCTL_KEYNAME, buffer, (size_t) length, KEY_SPEC_USER_KEYRING);
         if (kid < 0) {
             fprintf(stderr, "Could not insert key in keyring: %m\n");
-            free(buf);
             return false;
         }
+
+        keyctl(KEYCTL_SET_TIMEOUT, kid, 5 * 60, 0, 0);
+        keyctl(KEYCTL_SETPERM, kid, (key_perm_t) 0x03010000, 0, 0);
 
 #if 0
         FILE* fd = fopen("/ckey", "w");
         fwrite(buf, 1, length, fd);
         fclose(fd);
 #endif
-        free(buf);
     }
 
     return true;
@@ -430,13 +450,6 @@ int main () {
 
     if (!wait_for_device(type, uuid, device, sizeof(device), filesystem))
         goto cleanup;
-
-    if (getuid() != 0) {
-        fprintf(stderr, "mount -o ro,noexec -t %1$s %2$s %3$s\n"
-            "tpm_unsealdata -z -i %3$s/%4$s | keyctl padd user \"%5$s\" @u\n"
-            "umount -l %3$s\n", filesystem, device, MOUNT_POINT, keyfilename, KEYCTL_KEYNAME);
-        goto cleanup;
-    }
 
     if (mkdir(MOUNT_POINT, 0777) != 0) {
         int error = errno;

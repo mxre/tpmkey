@@ -1,8 +1,7 @@
 [Unit]
 Description=Load Encryption keys
-Wants=tcsd.socket tcsd.service
-Requires=systemd-udev-trigger.service
-After=tcsd.socket tcsd.service sockets.target systemd-udev-trigger.service
+Requires=systemd-udev-trigger.service dev-tpm0.device
+After=systemd-udev-trigger.service dev-tpm0.device
 Before=cryptsetup-pre.target cryptsetup.target
 DefaultDependencies=no
 ConditionKernelCommandLine=rd.tpm.key

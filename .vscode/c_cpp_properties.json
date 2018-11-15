@@ -1,35 +1,22 @@
 {
   "configurations": [
     {
-      "name": "Mac",
-      "includePath": [
-        "${workspaceRoot}",
-        "/usr/include",
-        "/usr/local/include"
-      ],
-      "defines": [],
-      "browse": {
-        "path": [
-          "/usr/include",
-          "/usr/local/include"
-        ],
-        "limitSymbolsToIncludedHeaders": true,
-        "databaseFilename": ""
-      },
-      "macFrameworkPath": [
-        "/System/Library/Frameworks",
-        "/Library/Frameworks"
-      ],
-      "intelliSenseMode": "clang-x64"
-    },
-    {
       "name": "Linux",
       "includePath": [
         "${workspaceRoot}",
+        "${workspaceRoot}/libtpm",
         "/usr/local/include",
         "/usr/include"
       ],
-      "defines": [],
+      "defines": [
+        "TPM_POSIX=1",
+        "TPM_NV_DISK=1",
+        "TPM_AES=1",
+        "TPM_V12=1",
+        "TPM_USE_TAG_IN_STRUCTURE=1",
+        "TPM_USE_CHARDEV=1",
+        "_GNU_SOURCE=1"
+      ],
       "browse": {
         "path": [
           "/usr/local/include",
@@ -39,25 +26,6 @@
         "databaseFilename": ""
       },
       "intelliSenseMode": "clang-x64"
-    },
-    {
-      "name": "Win32",
-      "includePath": [
-        "${workspaceRoot}",
-        "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include"
-      ],
-      "defines": [
-        "_DEBUG",
-        "UNICODE"
-      ],
-      "browse": {
-        "path": [
-          "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*"
-        ],
-        "limitSymbolsToIncludedHeaders": true,
-        "databaseFilename": ""
-      },
-      "intelliSenseMode": "msvc-x64"
     }
   ],
   "version": 4

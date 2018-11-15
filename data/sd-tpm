@@ -4,50 +4,14 @@ build() {
     # for debugging
     add_module "tpm_tis"
 
-    add_file "/usr/lib/libgcc_s.so.1"
-    add_symlink "/usr/lib/libgcc_s.so" "/usr/lib/libgcc_s.so.1"
-    add_file "/usr/lib/initcpio/tpm/tcsd.conf" "/etc/tcsd.conf" 600
-    add_file "/var/lib/tpm/system.data" "/var/lib/tpm/system.data"
-
-    add_systemd_unit "tcsd.service"
-    add_systemd_unit "tcsd.socket"
     add_systemd_unit "tpmkey.service"
     add_systemd_unit "cryptsetup-pre.target"
     add_systemd_unit "cryptsetup.target"
-    add_systemd_unit "sockets.target"
 
     add_symlink "/usr/lib/systemd/system/sysinit.target.wants/cryptsetup-pre.target" "/usr/lib/systemd/system/cryptsetup-pre.target"
     add_symlink "/usr/lib/systemd/system/cryptsetup-pre.target.wants/tpmkey.service" "/usr/lib/systemd/system/tpmkey.service"
-    add_symlink "/usr/lib/systemd/system/sockets.target.wants/tcsd.socket" "/usr/lib/systemd/system/tcsd.socket"
 
     add_udev_rule "70-tpmd.rules"
-
-    add_systemd_drop_in tcsd.socket initrd << EOF
-[Unit]
-DefaultDependencies=no
-Before=sockets.target
-EOF
-
-    add_systemd_drop_in tcsd.service initrd << EOF
-[Unit]
-DefaultDependencies=no
-Wants=tcsd.socket
-After=systemd-modules-loaded.service tcsd.socket
-Before=sysinit.target
-EOF
-
-    echo "tss:x:58:58:tss:/:/bin/sh" >>"$BUILDROOT/etc/passwd"
-    echo "tss:x:58:tss" >> "$BUILDROOT/etc/group"
-    echo "tss::::::::" >> "$BUILDROOT/etc/shadow"
-    chown 58:58 "$BUILDROOT/etc/tcsd.conf"
-    chown 58:58 "$BUILDROOT/var/lib/tpm"
-    chmod 0700 "$BUILDROOT/var/lib/tpm"
-    chown 58:58 "$BUILDROOT/var/lib/tpm/system.data"
-    chmod 0600 "$BUILDROOT/var/lib/tpm/system.data"
-
-    # remove the no resolve name option, it messes with setting the user/groups
-    # for the device file, tcsd is very pick about that
-    rm "$BUILDROOT/etc/systemd/system/systemd-udevd.service.d/resolve-names.conf"
 
     # avoid udev warnings
     cat >> "$BUILDROOT/etc/group" <<EOF
@@ -56,10 +20,12 @@ disk:x:6:
 lp:x:7:
 kmem:x:9:
 uucp:x:14:
+kvm:x:78:
 video:x:91:
 audio:x:92:
 optical:x:93:
 storage:x:95:
 input:x:97:
+render:x:986:
 EOF
 }
