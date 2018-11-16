@@ -1,12 +1,23 @@
-LIBRARIES = -lkeyutils -ltpm -ludev -lcrypto -Llibtpm
+LIBRARIES = -lkeyutils -ludev -lcrypto
 INCLUDES = -Ilibtpm
 
 # source files
 SOURCES = \
 	src/tpmkey.c
 
+LIBTPM = \
+	libtpm/auditing.c libtpm/bind.c libtpm/chgauth.c libtpm/context.c \
+	libtpm/counter.c libtpm/daa.c libtpm/debug.c libtpm/delegation.c libtpm/dir.c \
+	libtpm/eviction.c libtpm/hmac.c libtpm/identity.c libtpm/keys.c libtpm/keyswap.c \
+	libtpm/maintenance.c libtpm/management.c libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
+	libtpm/oiaposap.c libtpm/optin.c libtpm/owner.c libtpm/ownertpmdiag.c \
+	libtpm/pcrs.c libtpm/raw.c libtpm/rng.c libtpm/seal.c libtpm/serialize.c libtpm/session.c \
+	libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
+	libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_sock.c libtpm/tpmutil_tty.c libtpm/tpmutil_unixio.c \
+	libtpm/tpmutil_libtpms.c libtpm/transport.c
+
 # set required C flags
-CFLAGS += -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1
+CFLAGS += -mrdrnd -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1
 
 # executable name
 BINARY = tpmkey
@@ -16,8 +27,9 @@ BINARY = tpmkey
 .PHONY: all clean dist debug dist
 
 OBJECTS = $(patsubst src/%.c,obj/%.o,$(SOURCES))
+LIBTPM_O = $(patsubst libtpm/%.c,obj/%.o,$(LIBTPM))
 
-all: $(OBJECTS:.o=.d) $(BINARY)
+all: $(OBJECTS:.o=.d) $(LIBTPM_O:.o=.d) $(BINARY)
 
 # build for release
 dist: CFLAGS += -O3 -g0 -Wall -fPIC -DNDEBUG -D_FORTIFY_SOURCE=2 -fstack-protector-strong --param=ssp-buffer-size=4
@@ -29,9 +41,19 @@ debug: CFLAGS += -O0 -g3 -Wall -Wextra -DDEBUG
 debug: LDFLAGS +=
 debug: all
 
-$(BINARY): $(OBJECTS) libtpm/libtpm.a
-	@echo -e "\x1b[33mCCLD\x1b[0m $@"
+$(BINARY): $(OBJECTS) $(LIBTPM_O)
+	@echo -e "\x1b[33mCCLD\x1b[0m $<"
 	$(CC) $(LDFLAGS) $^ $(LIBRARIES) -o $@
+
+obj/%.d: libtpm/%.c
+	@test -d obj || mkdir obj
+	@echo -e "\x1b[33mDEP\x1b[0m  $<"
+	$(CC) $(CFLAGS) $(INCLUDES) $< -MM -MF $@
+
+obj/%.o: libtpm/%.c
+	@test -d obj || mkdir obj
+	@echo -e "\x1b[32mCC\x1b[0m   $<"
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 obj/%.d: src/%.c
 	@test -d obj || mkdir obj
@@ -40,17 +62,14 @@ obj/%.d: src/%.c
 
 obj/%.o: src/%.c
 	@test -d obj || mkdir obj
-	@echo -e "\x1b[32mCC\x1b[0m   $@"
+	@echo -e "\x1b[32mCC\x1b[0m   $<"
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
-
-libtpm/libtpm.a:
-	@echo -e "\x1b[32mMAKE\x1b[0m $@"
-	make -j4 -C libtpm -e "CFLAGS=$(CFLAGS) -I. -mrdrnd"
 
 clean:
 	@echo -e "\x1b[31mRM\x1b[0m   $(OBJECTS) $(BINARY)"
 	$(RM) $(OBJECTS) $(BINARY) $(OBJECTS:.o=.d)
-	make -C libtpm clean
+	@echo -e "\x1b[31mRM\x1b[0m   $(LIBTPM_O)"
+	$(RM) $(LIBTPM_O) $(LIBTPM_O:.o=.d)
 
 install: dist
 	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/initcpio/install/sd-tpm"
@@ -60,4 +79,4 @@ install: dist
 	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/tpmkey"
 	install -m755 tpmkey "/usr/lib"
 
--include $(OBJECTS:.o=.d)
+-include $(OBJECTS:.o=.d) $(LIBTPM_O:.o=.d)
