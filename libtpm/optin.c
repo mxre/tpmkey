@@ -93,9 +93,7 @@ uint32_t TPM_OwnerSetDisable(unsigned char *ownerauth,
 
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
@@ -167,9 +165,7 @@ uint32_t TPM_SetTempDeactivated(unsigned char *operatorauth  // HMAC key
 		/* calculate encrypted authorization value */
 		
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
 		                   TPM_U32_SIZE,&ordinal_no,
 		                   0,0);

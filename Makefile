@@ -35,7 +35,7 @@ $(BINARY): $(OBJECTS) libtpm/libtpm.a
 
 obj/%.d: src/%.c
 	@test -d obj || mkdir obj
-	@#echo -e "\x1b[33mDEP\x1b[0m  $<"
+	@echo -e "\x1b[33mDEP\x1b[0m  $<"
 	$(CC) $(CFLAGS) $(INCLUDES) $< -MM -MF $@
 
 obj/%.o: src/%.c
@@ -45,7 +45,7 @@ obj/%.o: src/%.c
 
 libtpm/libtpm.a:
 	@echo -e "\x1b[32mMAKE\x1b[0m $@"
-	make -C libtpm -e "CFLAGS=$(CFLAGS) -I."
+	make -j4 -C libtpm -e "CFLAGS=$(CFLAGS) -I. -mrdrnd"
 
 clean:
 	@echo -e "\x1b[31mRM\x1b[0m   $(OBJECTS) $(BINARY)"
@@ -53,17 +53,11 @@ clean:
 	make -C libtpm clean
 
 install: dist
-	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/initcpio/tpm/tcsd.conf"
-	install -m644 data/tcsd.conf "/usr/lib/initcpio/tpm"
 	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/initcpio/install/sd-tpm"
 	install -m644 data/sd-tpm "/usr/lib/initcpio/install"
-	#@echo -e "\x1b[34mINST\x1b[0m /usr/lib/systemd/system/tcsd.service"
-	#install -m644 data/tcsd.service "/usr/lib/systemd/system"
-	#@echo -e "\x1b[34mINST\x1b[0m /usr/lib/systemd/system/tcsd.socket"
-	#install -m644 data/tcsd.socket "/usr/lib/systemd/system"
 	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/systemd/system/tpmkey.service"
 	install -m644 data/tpmkey.service "/usr/lib/systemd/system"
-	@echo -e "\x1b[34mINST\x1b[0m /usr/bin/tpmkey"
-	install -m755 tpmkey "/usr/bin"
+	@echo -e "\x1b[34mINST\x1b[0m /usr/lib/tpmkey"
+	install -m755 tpmkey "/usr/lib"
 
 -include $(OBJECTS:.o=.d)

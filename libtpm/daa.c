@@ -83,8 +83,7 @@ uint32_t TPM_DAA_Join(uint32_t sesshandle,
 	}
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
 	                      &sess,
@@ -183,8 +182,7 @@ uint32_t TPM_DAA_Sign(uint32_t sesshandle,
 	}
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
 	                      &sess,

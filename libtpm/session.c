@@ -89,10 +89,7 @@ uint32_t TPM_KeyControlOwner(
 	}
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
-
+	TSS_gennonce(nonceodd);
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
 	                      &sess,

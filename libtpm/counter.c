@@ -117,9 +117,7 @@ uint32_t TPM_CreateCounter(uint32_t keyhandle,
 	TPM_CreateEncAuth(&sess, passptr1, encauth, 0);
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* move Network byte order data to variable for HMAC calculation */
 
@@ -207,9 +205,7 @@ uint32_t TPM_IncrementCounter(uint32_t countid,              // id of the counte
 	    NULL == counterbuffer) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OIAP|SESSION_OSAP,
@@ -295,8 +291,7 @@ uint32_t TPM_ReadCounter(uint32_t countid,              // id of the counter
 		unsigned char authdata[TPM_NONCE_SIZE];
 		uint32_t authhandle;
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 		/* Open OIAP Session */
 		ret = TSS_OIAPopen(&authhandle,evennonce);
 		if (ret != 0) return ret;
@@ -394,9 +389,7 @@ uint32_t TPM_ReleaseCounter(uint32_t countid,              // id of the counter
 	if (NULL == counterauth) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OIAP|SESSION_OSAP,
 	                      &sess,
@@ -471,9 +464,7 @@ uint32_t TPM_ReleaseCounterOwner(uint32_t countid,              // id of the cou
 	if (NULL == ownerauth) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
 	                      &sess,

@@ -217,10 +217,7 @@ uint32_t TPM_TakeOwnership(unsigned char *ownpass,
 	/* convert to a memory buffer */
 	srkparamsize =  TPM_WriteKey(&srk_param_buff,&srk);
 	/* generate the odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (ret == 0) {
-		goto failexit;
-	}
+	TSS_gennonce(nonceodd);
 	/* initiate the OIAP protocol */
 	ret = TSS_SessionOpen(SESSION_OIAP,  /* only OIAP ! */
 	                      &sess,
@@ -315,8 +312,7 @@ uint32_t TPM_OwnerClear(unsigned char *ownpass)
    if (ownpass == NULL) return ERR_NULL_ARG;
    command = htonl(91);
    /* generate odd nonce */
-   ret = TSS_gennonce(nonceodd);
-   if (ret == 0) return ret;
+   TSS_gennonce(nonceodd);
    /* start OIAP Protocol */
    ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
                          &sess,
@@ -385,8 +381,7 @@ uint32_t TPM_DisableOwnerClear(unsigned char *ownerauth  // HMAC key
 	if (NULL == ownerauth) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,

@@ -312,9 +312,7 @@ uint32_t TPM_ReadPubek(pubkeydata *k)
 	if (k == NULL) 
 		return ERR_NULL_ARG;
 
-	ret = TSS_gennonce(antiReplay);
-	if (ret == 0) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(antiReplay);
 
 	/* copy Read PubKey request template to buffer */
 	ret = TSS_buildbuff("00 c1 T 00 00 00 7c %",&tpmdata,
@@ -500,8 +498,7 @@ uint32_t TPM_OwnerReadInternalPub(uint32_t keyhandle,
 	session sess;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,

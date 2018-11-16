@@ -79,9 +79,7 @@ uint32_t TPM_SetRedirection(uint32_t keyhandle,
 	}
 
 	/* generate the odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (ret == 0) 
-		return ret;
+	TSS_gennonce(nonceodd);
 
 	/* initiate the OSAP protocol */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP,&sess,ownerAuth,TPM_ET_OWNER,keyhandle);
@@ -142,9 +140,7 @@ uint32_t TPM_ResetLockValue(unsigned char * ownerAuth)
 
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,

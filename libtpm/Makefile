@@ -1,4 +1,4 @@
-CFLAGS += -I.
+CFLAGS += -mrdrnd -O0 -g3 -Wall -Wextra -I. -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1
 
 LIBRARIES = libtpm.a
 HEADERS = tpmfunc.h tpm.h tpmkeys.h

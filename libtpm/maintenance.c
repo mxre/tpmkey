@@ -83,9 +83,7 @@ uint32_t TPM_CreateMaintenanceArchive(TPM_BOOL generateRandom,
 		return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
@@ -172,9 +170,7 @@ uint32_t TPM_LoadMaintenanceArchive(unsigned char * ownerAuth)
 		return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,
@@ -235,9 +231,7 @@ uint32_t TPM_KillMaintenanceFeature(unsigned char * ownerAuth)
 		return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) 
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP|SESSION_OSAP|SESSION_OIAP,

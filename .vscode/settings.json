@@ -3,7 +3,8 @@
     "cstring": "cpp",
     "list": "c",
     "string_view": "c",
-    "stat.h": "c"
+    "stat.h": "c",
+    "rand.h": "c"
   },
   "c-cpp-flylint.language": "c",
   "c-cpp-flylint.standard": [

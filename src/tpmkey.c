@@ -340,12 +340,11 @@ static bool unseal_key(const char* keyfilename) {
     uint32_t parent_key_handle = TPM_KH_SRK;
     // well known password
     unsigned char pass[20] = {0};
-
+    //strcpy(filename, keyfilename);
     if (keyfilename[0] == '/')
         sprintf(filename, "%s%s", MOUNT_POINT, keyfilename);
     else
         sprintf(filename, "%s/%s", MOUNT_POINT, keyfilename);
-
     fd = open(filename, O_RDONLY);
     if (fd < 0) {
         fprintf(stderr, "Could not open key from '%s': %m\n", filename);
@@ -366,13 +365,16 @@ static bool unseal_key(const char* keyfilename) {
 
     err = TPM_Unseal(parent_key_handle, pass, NULL, blob, blob_length, buffer, &length);
     free(blob);
-
-    if (length >= 100) {
-        fprintf(stderr, "Key is too long, systemd does not like that\n");
-        return false;
-    }
+    // printf("%u %u\n", blob_length, length);
 
     if (!err) {
+        // printf("%s\n", buffer);
+        // exit(0);
+        if (length >= 100) {
+            fprintf(stderr, "Key is too long, systemd does not like that\n");
+            return false;
+        }
+
         key_serial_t kid = add_key("user", KEYCTL_KEYNAME, buffer, (size_t) length, KEY_SPEC_USER_KEYRING);
         if (kid < 0) {
             fprintf(stderr, "Could not insert key in keyring: %m\n");
@@ -387,6 +389,9 @@ static bool unseal_key(const char* keyfilename) {
         fwrite(buf, 1, length, fd);
         fclose(fd);
 #endif
+    } else {
+        printf("Error %s from TPM_Unseal\n", TPM_GetErrMsg(err));
+        return false;
     }
 
     return true;
@@ -408,7 +413,8 @@ int main () {
     char filesystem[32];
 
     char *alloc = NULL;
-
+    // unseal_key("pass1.bin");
+    // exit(1);
     char *keyfilename = NULL;
     char *device_name = NULL;
     char *type = NULL;

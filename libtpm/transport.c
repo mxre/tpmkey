@@ -859,8 +859,7 @@ static uint32_t TPM_EstablishTransport_Internal(uint32_t keyhandle,
 	if (keyhandle != TPM_KH_TRANSPORT) {
 
 	       /* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* Open OIAP Session */
 		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP|SESSION_DSAP,
@@ -1525,11 +1524,7 @@ uint32_t _TPM_ExecuteTransport(struct tpm_buffer *tb,
 	sprintf(message,"ExecuteTransport(%s) - AUTH1",msg);
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		ret = ERR_CRYPT_ERR;
-		goto exit;
-	}
+	TSS_gennonce(nonceodd);
 
 	ret = encWrappedCommand(tb,
 	                        &encbuffer,

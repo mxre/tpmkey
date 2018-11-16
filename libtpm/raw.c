@@ -98,11 +98,7 @@ uint32_t TPM_RawDataOIAP(uint32_t ordinal,
 	}
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		TSS_OIAPclose(authhandle);
-		return ERR_CRYPT_ERR;
-	}
+	TSS_gennonce(nonceodd);
 
 	ret = TSS_authhmac(authdata,ownerauth,TPM_HASH_SIZE,enonce,nonceodd,c,
 	                   TPM_U32_SIZE,&ordinal_no,
@@ -180,11 +176,7 @@ uint32_t TPM_RawDataOSAP(uint32_t keyhandle,
 	TPM_CreateEncAuth(&sess, passptr1, encauth, 0);
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		TSS_OSAPclose(osap);
-		return ERR_CRYPT_ERR;
-	}
+	TSS_gennonce(nonceodd);
 
 	ret = TSS_authhmac(authdata,osap->ssecret,TPM_HASH_SIZE,osap->enonce,nonceodd,c,
 	                   TPM_U32_SIZE,&ordinal_no,

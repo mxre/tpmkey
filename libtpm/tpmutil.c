@@ -57,7 +57,7 @@
 #include <winsock2.h>
 #endif
 
-#include <openssl/rand.h>
+#include <immintrin.h>
 #include <openssl/sha.h>
 #include <openssl/aes.h>
 
@@ -210,11 +210,21 @@ uint32_t TSS_getsize(unsigned char *rsp)
 /* Generate a random nonce                                                  */
 /*                                                                          */
 /****************************************************************************/
-int TSS_gennonce(unsigned char *nonce)
+void TSS_gennonce(unsigned char *nonce)
 {
-    return RAND_bytes(nonce,TPM_HASH_SIZE);
+    uint64_t end = TPM_HASH_SIZE / sizeof(uint64_t);
+    uint64_t pos;
+    for (pos = 0; pos < end; pos++) {
+        unsigned long long rd = 0;
+        _rdrand64_step(&rd);
+        *(((uint64_t*) nonce) + pos) = rd;
+    }
+    // 4 bytes now remain as TPM_HASH_SIZE is 20 bytes long
+    unsigned int rd = 0;
+    _rdrand32_step(&rd);
+    *((uint32_t*)(((uint64_t*) nonce) + pos)) = rd;
 }
-   
+
 /****************************************************************************/
 /*                                                                          */
 /*  This routine takes a format string, sort of analogous to sprintf,       */

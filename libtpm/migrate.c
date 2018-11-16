@@ -601,9 +601,7 @@ TPM_MigrateKey(uint32_t keyhandle,
 		/* generate odd nonce */
 		session sess;
 
-		ret = TSS_gennonce(nonceodd);
-		if (0 == ret)
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* Open OSAP Session */
 		ret = TSS_SessionOpen(SESSION_DSAP | SESSION_OSAP | SESSION_OIAP,
@@ -721,9 +719,7 @@ TPM_CMK_SetRestrictions(uint32_t restriction, unsigned char *ownerAuth)
 		return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (0 == ret)
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP | SESSION_OIAP,
@@ -786,9 +782,7 @@ TPM_CMK_ApproveMA(unsigned char *migAuthDigest,
 		return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (0 == ret)
-		return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP | SESSION_OIAP,
@@ -998,10 +992,7 @@ TPM_CMK_CreateTicket(keydata * key,
 	serPubKeySize = ret;
 
 	/* generate odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		return ERR_CRYPT_ERR;
-	}
+	TSS_gennonce(nonceodd);
 
 	/* Open OSAP Session */
 	ret = TSS_SessionOpen(SESSION_DSAP | SESSION_OSAP | SESSION_OIAP,
@@ -1133,11 +1124,7 @@ TPM_CMK_CreateBlob(uint32_t parenthandle,
 	}
 
 	/* generate odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		TSS_FreeTPMBuffer(serMsaList);
-		return ERR_CRYPT_ERR;
-	}
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP | SESSION_OIAP | SESSION_DSAP,
 			      &sess, parkeyUsageAuth, TPM_ET_KEYHANDLE, parenthandle);
@@ -1361,11 +1348,7 @@ TPM_CMK_ConvertMigration(uint32_t parenthandle,
 	serMsaListSize_no = htonl(serMsaListSize);
 
 	/* generate odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (0 == ret) {
-		TSS_FreeTPMBuffer(serMsaList);
-		return ERR_CRYPT_ERR;
-	}
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP | SESSION_OIAP,
 			      &sess,

@@ -84,9 +84,7 @@ uint32_t TPM_GetCapabilityOwner(unsigned char *ownpass, uint32_t *volflags, uint
 	/* set up command and protocol values for TakeOwnership function */
 	command =  htonl(TPM_ORD_GetCapabilityOwner);
 	/* generate the odd nonce */
-	ret = TSS_gennonce(nonceodd);
-	if (ret == 0) 
-		return ret;
+	TSS_gennonce(nonceodd);
 	/* initiate the OSAP protocol */
 	ret = TSS_SessionOpen(SESSION_OSAP,&sess,ownpass,TPM_OWNER_ETYPE,TPM_OWNER_EVALUE);
 	if (ret != 0) 
@@ -247,9 +245,7 @@ uint32_t TPM_GetCapabilitySigned(uint32_t keyhandle,
 		unsigned char nonceodd[TPM_HASH_SIZE];
 		session sess;
 
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
 		                      &sess,
@@ -375,9 +371,7 @@ uint32_t TPM_SetCapability(uint32_t caparea,
 		uint32_t setValueSize_no = htonl(setValue->used);
 		
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* Open OIAP Session */
 		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,

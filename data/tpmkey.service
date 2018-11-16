@@ -8,6 +8,7 @@ ConditionKernelCommandLine=rd.tpm.key
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/tpmkey
-TimeoutSec=15
+Environment="TPM_DEVICE=/dev/tpm0"
+ExecStart=/usr/bin/ltrace -t /usr/lib/tpmkey
+TimeoutSec=10
 StandardError=journal+console

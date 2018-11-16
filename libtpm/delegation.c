@@ -221,8 +221,7 @@ uint32_t TPM_Delegate_CreateKeyDelegation(uint32_t keyhandle,
 		TPM_CreateEncAuth(&sess, blobAuth, encauth, 0);
 
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* move Network byte order data to variable for HMAC calculation */
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
@@ -327,9 +326,7 @@ uint32_t TPM_Delegate_CreateOwnerDelegation(TPM_BOOL increment,
 		TPM_CreateEncAuth(&sess, blobAuth, encauth, 0);
 
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* move Network byte order data to variable for HMAC calculation */
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
@@ -427,9 +424,7 @@ uint32_t TPM_Delegate_LoadOwnerDelegation(uint32_t index,
 		TPM_CreateEncAuth(&sess, ownerAuth, encauth, 0);
 
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* move Network byte order data to variable for HMAC calculation */
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,

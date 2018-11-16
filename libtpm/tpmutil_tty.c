@@ -67,9 +67,6 @@
 #include <termios.h>
 #endif
 
-#include <openssl/rand.h>
-#include <openssl/sha.h>
-
 #include "tpm.h"
 #include "tpmfunc.h"
 #include "tpm_types.h"
@@ -118,6 +115,7 @@ void TPM_LowLevel_TransportCharDev_Set(void)
 /*                                                                          */
 /****************************************************************************/
 
+#ifdef TPM_VTPM
 static uint32_t 
 TPM_OpenClientSocket_UnixIO(int *sock_fd)
 {
@@ -142,20 +140,21 @@ TPM_OpenClientSocket_UnixIO(int *sock_fd)
     }
     return ERR_IO;
 }
+#endif
 
 static uint32_t TPM_OpenClientCharDev(int *sock_fd)
 {
-    char *tty_str;
+    char *tty_str = getenv("TPM_DEVICE");
+
+#ifdef TPM_VTPM
     uint32_t rc;
-
-    tty_str = getenv("TPM_DEVICE");
-
     if (tty_str == NULL || !strcmp("unixio",tty_str)) {
         rc = TPM_OpenClientSocket_UnixIO(sock_fd);
         if (rc == 0) {
             return 0;
         }
     }
+#endif
 
     if (tty_str == NULL) {
         tty_str = DEFAULT_TPM_DEVICE;

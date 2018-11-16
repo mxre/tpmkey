@@ -67,7 +67,7 @@
 struct tpm_buffer;
 
 uint32_t TSS_getsize(unsigned char *rsp);
-int      TSS_gennonce(unsigned char *nonce);
+void     TSS_gennonce(unsigned char *nonce);
 int      TSS_buildbuff(char *format,struct tpm_buffer *, ...);
 int      TSS_parsebuff(char *format,const struct tpm_buffer *, uint32_t offset, ...);
 uint32_t TPM_Transmit(struct tpm_buffer *,const char *msg);

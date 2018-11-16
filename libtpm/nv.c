@@ -107,9 +107,7 @@ uint32_t TPM_NV_DefineSpace(unsigned char *ownauth,  // HMAC key
 		TPM_CreateEncAuth(&sess, passptr1, encauth, 0);
 
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
 		                   TPM_U32_SIZE,&ordinal_no,
@@ -277,9 +275,7 @@ uint32_t TPM_NV_WriteValue(uint32_t nvIndex,
 	if (NULL != ownauth) {
 		/* generate odd nonce */
 		session sess;
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 		/* Open OIAP Session */
 		
 		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
@@ -387,8 +383,7 @@ uint32_t TPM_NV_WriteValueAuth(uint32_t nvIndex,
 	if (areaauth == NULL) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
 	                      &sess,
@@ -479,9 +474,7 @@ uint32_t TPM_NV_ReadValue(uint32_t nvIndex,
 	if (NULL != ownauth) {
 		session sess;
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) 
-			return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 		/* Open OIAP Session */
 		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
 		                      &sess,
@@ -606,8 +599,7 @@ uint32_t TPM_NV_ReadValueAuth(uint32_t nvIndex,
 	if (buffer == NULL || areaauth == NULL) return ERR_NULL_ARG;
 
 	/* generate odd nonce */
-	ret  = TSS_gennonce(nonceodd);
-	if (0 == ret) return ERR_CRYPT_ERR;
+	TSS_gennonce(nonceodd);
 	/* Open OIAP Session */
 	ret = TSS_SessionOpen(SESSION_OSAP|SESSION_OIAP,
 	                      &sess,

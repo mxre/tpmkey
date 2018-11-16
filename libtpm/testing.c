@@ -167,8 +167,7 @@ uint32_t TPM_CertifySelfTest(uint32_t keyhandle,
 		if (ret != 0) return ret;
 
 		/* generate odd nonce */
-		ret  = TSS_gennonce(nonceodd);
-		if (0 == ret) return ERR_CRYPT_ERR;
+		TSS_gennonce(nonceodd);
 
 		/* move Network byte order data to variable for hmac calculation */
 		ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
