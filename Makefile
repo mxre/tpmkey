@@ -13,8 +13,8 @@ LIBTPM = \
 	libtpm/oiaposap.c libtpm/optin.c libtpm/owner.c libtpm/ownertpmdiag.c \
 	libtpm/pcrs.c libtpm/raw.c libtpm/rng.c libtpm/seal.c libtpm/serialize.c libtpm/session.c \
 	libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
-	libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_sock.c libtpm/tpmutil_tty.c libtpm/tpmutil_unixio.c \
-	libtpm/tpmutil_libtpms.c libtpm/transport.c
+	libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_dev.c libtpm/transport.c
+# libtpm/tpmutil_unixio.c libtpm/tpmutil_sock.c libtpm/tpmutil_libtpms.c
 
 # set required C flags
 CFLAGS += -mrdrnd -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1

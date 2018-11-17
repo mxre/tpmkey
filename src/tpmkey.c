@@ -336,7 +336,7 @@ static bool unseal_key(const char* keyfilename) {
     uint32_t length = 100;
     uint32_t err;
     int fd;
-    struct statx stat = { 0 };
+    struct stat st = { 0 };
     uint32_t parent_key_handle = TPM_KH_SRK;
     // well known password
     unsigned char pass[20] = {0};
@@ -351,8 +351,8 @@ static bool unseal_key(const char* keyfilename) {
         return false;
     }
 
-    statx(fd, "", AT_EMPTY_PATH, STATX_SIZE, &stat);
-    blob_length = stat.stx_size;
+    fstat(fd, &st);
+    blob_length = st.st_size;
     blob = (uint8_t*) malloc(blob_length);
 
     if (read(fd, blob, blob_length) < 0) {

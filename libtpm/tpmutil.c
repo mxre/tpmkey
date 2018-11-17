@@ -150,19 +150,21 @@ int TPM_LowLevel_Transport_Init(int choice)
 		break;
 		
 		case TPM_LOWLEVEL_TRANSPORT_TCP_SOCKET:
+#ifndef TPM_USE_CHARDEV
 			TPM_LowLevel_TransportSocket_Set();
+#endif
 		break;
 		case TPM_LOWLEVEL_TRANSPORT_UNIXIO:
-#ifdef TPM_POSIX		
+#ifdef TPM_UNIX_DOMAIN_SOCKET		
 			TPM_LowLevel_TransportUnixIO_Set();
 #endif
 		break;
 		
 
 #ifdef TPM_USE_LIBTPMS
-                case TPM_LOWLEVEL_TRANSPORT_LIBTPMS:
-                        TPM_LowLevel_TransportLibTPMS_Set();
-                break;
+        case TPM_LOWLEVEL_TRANSPORT_LIBTPMS:
+                TPM_LowLevel_TransportLibTPMS_Set();
+        break;
 #endif
 	}
 	actual_used_transport = tp;
@@ -170,6 +172,7 @@ int TPM_LowLevel_Transport_Init(int choice)
 	return tp;
 }
 
+#ifdef TPM_VTPM
 int TPM_LowLevel_Use_VTPM(void)
 {
 	return use_vtpm;
@@ -192,6 +195,7 @@ int TPM_LowLevel_VTPM_Set(int state)
 	}
 	return rc;
 }
+#endif
 
 /****************************************************************************/
 /*                                                                          */
