@@ -8,22 +8,22 @@
 /* (c) Copyright IBM Corporation 2006, 2010.					*/
 /*										*/
 /* All rights reserved.								*/
-/* 										*/
+/*                                                                              */
 /* Redistribution and use in source and binary forms, with or without		*/
 /* modification, are permitted provided that the following conditions are	*/
 /* met:										*/
-/* 										*/
+/*                                                                              */
 /* Redistributions of source code must retain the above copyright notice,	*/
 /* this list of conditions and the following disclaimer.			*/
-/* 										*/
+/*                                                                              */
 /* Redistributions in binary form must reproduce the above copyright		*/
 /* notice, this list of conditions and the following disclaimer in the		*/
 /* documentation and/or other materials provided with the distribution.		*/
-/* 										*/
+/*                                                                              */
 /* Neither the names of the IBM Corporation nor the names of its		*/
 /* contributors may be used to endorse or promote products derived from		*/
 /* this software without specific prior written permission.			*/
-/* 										*/
+/*                                                                              */
 /* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS		*/
 /* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT		*/
 /* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR	*/
@@ -43,12 +43,12 @@
 #include <stdint.h>
 
 /*
-  NOTE implementation Specific
-*/
+   NOTE implementation Specific
+ */
 
 /*
-  version, revision, specLevel, errataRev
-*/
+   version, revision, specLevel, errataRev
+ */
 
 /* current for released specification revision 103 */
 
@@ -57,12 +57,12 @@
 #define TPM_REVISION TPM_REVISION_MAX
 #endif
 
-#if  (TPM_REVISION >= 116) 
+#if  (TPM_REVISION >= 116)
 
 #define TPM_SPEC_LEVEL  0x0002          /* uint16_t The level of ordinals supported */
 #define TPM_ERRATA_REV  0x03            /* specification errata level */
 
-#elif  (TPM_REVISION >= 103) 
+#elif  (TPM_REVISION >= 103)
 
 #define TPM_SPEC_LEVEL  0x0002          /* uint16_t The level of ordinals supported */
 #define TPM_ERRATA_REV  0x02            /* specification errata level */
@@ -92,7 +92,6 @@
 #endif
 
 
-
 #define TPM_VENDOR_ID    "IBM"  /* 4 bytes, as of rev 99 vendorID and TPM_CAP_PROP_MANUFACTURER
                                    return the same value */
 #define TPM_MANUFACTURER "IBM"  /* 4 characters, assigned by TCG, typically stock ticker symbol */
@@ -116,13 +115,13 @@
    Long - creating an RSA key pair
    Medium - using an RSA key
    Short  - anything else
-*/
+ */
 
 #ifndef TPM_SMALL_DURATION
 #define TPM_SMALL_DURATION      2000000
 #endif
 
-#ifndef TPM_MEDIUM_DURATION     
+#ifndef TPM_MEDIUM_DURATION
 #define TPM_MEDIUM_DURATION     5000000
 #endif
 
@@ -131,19 +130,19 @@
 #endif
 
 /* startup effects */
-   
+
 #define    TPM_STARTUP_EFFECTS_VALUE   \
-(TPM_STARTUP_EFFECTS_ST_ANY_RT_KEY |    /* key resources init by TPM_Startup(ST_ANY) */ \
- TPM_STARTUP_EFFECTS_ST_STATE_RT_HASH | /* hash resources are init by TPM_Startup(ST_STATE) */ \
- TPM_STARTUP_EFFECTS_ST_CLEAR_AUDITDIGEST) /* auditDigest nulled on TPM_Startup(ST_CLEAR) */
+        (TPM_STARTUP_EFFECTS_ST_ANY_RT_KEY | /* key resources init by TPM_Startup(ST_ANY) */ \
+         TPM_STARTUP_EFFECTS_ST_STATE_RT_HASH | /* hash resources are init by TPM_Startup(ST_STATE) */ \
+         TPM_STARTUP_EFFECTS_ST_CLEAR_AUDITDIGEST) /* auditDigest nulled on TPM_Startup(ST_CLEAR) */
 
 /*
-  TPM buffer limits
-*/
+   TPM buffer limits
+ */
 
 /* This value is used to limit memory allocation to prevent resource overload.
 
-*/
+ */
 
 #ifndef TPM_ALLOC_MAX
 #define TPM_ALLOC_MAX  0x10000  /* 64k bytes */
@@ -153,7 +152,7 @@
    smaller number saves memory.
 
    TPM_ALLOC_MAX must be a multiple of this value.
-*/
+ */
 
 #define TPM_STORE_BUFFER_INCREMENT (TPM_ALLOC_MAX / 64)
 
@@ -163,9 +162,9 @@
 
    NOTE: Some commands are somewhat open ended, and related to this parmater.  E.g., The input size
    for the TPM_SHA1Init.  The output size for TPM_GetRandom.
-  
+
    It is returned by TPM_GetCapability -> TPM_CAP_PROP_INPUT_BUFFER
-*/
+ */
 
 #ifndef TPM_BUFFER_MAX
 #define TPM_BUFFER_MAX  0x1000  /* 4k bytes */
@@ -176,16 +175,16 @@
 /* maximum bytes in one TPM_GetRandom() call
 
    Use maximum input buffer size minus tag, paramSize, returnCode, randomBytesSize.
-*/
+ */
 
 #define TPM_RANDOM_MAX  (TPM_BUFFER_MAX \
                          - sizeof(TPM_TAG) - sizeof(uint32_t) \
-			 - sizeof(TPM_RESULT) - sizeof(uint32_t))
+                         - sizeof(TPM_RESULT) - sizeof(uint32_t))
 
 /* Maximum number of bytes that can be sent to TPM_SHA1Update. Must be a multiple of 64 bytes.
 
    Use maximum input buffer size minus tag, paramSize, ordinal, numBytes.
-*/
+ */
 
 #define TPM_SHA1_MAXNUMBYTES    (TPM_BUFFER_MAX - 64)
 
@@ -203,17 +202,17 @@
 #define TPM_ILLEGAL_INSTANCE_HANDLE     0xffffffff
 
 /*
-  NOTE End Implementation Specific
-*/
+   NOTE End Implementation Specific
+ */
 
 /* 3. Structure Tags rev 105
 
    There have been some indications that knowing what structure is in use would be valuable
    information in each structure. This new tag will be in each new structure that the TPM defines.
-   
+
    The upper nibble of the value designates the purview of the structure tag.  0 is used for TPM
    structures, 1 for platforms, and 2-F are reserved.
-*/
+ */
 
 /* 3.1 TPM_STRUCTURE_TAG */
 
@@ -277,64 +276,64 @@
 #define TPM_TAG_DA_ACTION_TYPE          0x0039 /*  TPM_DA_ACTION_TYPE */
 
 /*
-  SW TPM Tags
-*/
+   SW TPM Tags
+ */
 
 /*
-  These tags are used to describe the format of serialized TPM non-volatile state
-*/
+   These tags are used to describe the format of serialized TPM non-volatile state
+ */
 
 /* These describe the overall format */
 
 /* V1 state is the sequence permanent data, permanent flags, owner evict keys, NV defined space */
 
-#define TPM_TAG_NVSTATE_V1		0x0001
+#define TPM_TAG_NVSTATE_V1              0x0001
 
 /* These tags describe the TPM_PERMANENT_DATA format */
 
 /* For the first release, use the standard TPM_TAG_PERMANENT_DATA tag.  Since this tag is never
    visible outside the TPM, the tag value can be cganged if the format changes.
-*/
+ */
 
 /* These tags describe the TPM_PERMANENT_FLAGS format */
 
 /* The TPM_PERMANENT_FLAGS structure changed from rev 94 to 103.  Unfortunately, the standard TPM
    tag did not change.  Define distinguishing values here.
-*/
+ */
 
-#define TPM_TAG_NVSTATE_PF94		0x0001
-#define TPM_TAG_NVSTATE_PF103		0x0002
+#define TPM_TAG_NVSTATE_PF94            0x0001
+#define TPM_TAG_NVSTATE_PF103           0x0002
 
 /* This tag describes the owner evict key format */
 
-#define TPM_TAG_NVSTATE_OE_V1		0x0001
+#define TPM_TAG_NVSTATE_OE_V1           0x0001
 
 /* This tag describes the NV defined space format */
 
-#define TPM_TAG_NVSTATE_NV_V1		0x0001
+#define TPM_TAG_NVSTATE_NV_V1           0x0001
 
 /*
-  These tags are used to describe the format of serialized TPM volatile state
-*/
+   These tags are used to describe the format of serialized TPM volatile state
+ */
 
 /* These describe the overall format */
 
 /* V1 state is the sequence TPM_STCLEAR_FLAGS, TPM_STANY_FLAGS, TPM_STCLEAR_DATA, TPM_STANY_DATA,
    TPM_KEY_HANDLE_ENTRY, SHA1 context, TPM_TRANSHANDLE, testState, NV volatile flags */
 
-#define TPM_TAG_VSTATE_V1		0x0001
+#define TPM_TAG_VSTATE_V1               0x0001
 
 /* This tag defines the key handle entry format */
 
-#define TPM_TAG_KHE_V1			0x0001
+#define TPM_TAG_KHE_V1                  0x0001
 
 /* This tag defines the SHA-1 context format */
 
-#define TPM_TAG_SHA1CONTEXT_V1		0x0001
+#define TPM_TAG_SHA1CONTEXT_V1          0x0001
 
 /* This tag defines the NV volatile flags format */
 
-#define TPM_TAG_NVFLAGS_V1		0x0001
+#define TPM_TAG_NVFLAGS_V1              0x0001
 
 /* 4. Types
  */
@@ -343,15 +342,15 @@
 
 #define TPM_RT_KEY      0x00000001  /* The handle is a key handle and is the result of a LoadKey
                                        type operation */
-   
+
 #define TPM_RT_AUTH     0x00000002  /* The handle is an authorization handle. Auth handles come from
                                        TPM_OIAP, TPM_OSAP and TPM_DSAP */
-   
+
 #define TPM_RT_HASH     0X00000003  /* Reserved for hashes */
 
 #define TPM_RT_TRANS    0x00000004  /* The handle is for a transport session. Transport handles come
                                        from TPM_EstablishTransport */
-   
+
 #define TPM_RT_CONTEXT  0x00000005  /* Resource wrapped and held outside the TPM using the context
                                        save/restore commands */
 
@@ -359,17 +358,17 @@
 
 #define TPM_RT_DELEGATE 0x00000007  /* The handle is for a delegate row. These are the internal rows
                                        held in NV storage by the TPM */
-   
+
 #define TPM_RT_DAA_TPM  0x00000008  /* The value is a DAA TPM specific blob */
-                                      
+
 #define TPM_RT_DAA_V0   0x00000009  /* The value is a DAA V0 parameter */
-                                     
+
 #define TPM_RT_DAA_V1   0x0000000A  /* The value is a DAA V1 parameter */
-                                     
+
 /* 4.2 TPM_PAYLOAD_TYPE rev 87
 
-   This structure specifies the type of payload in various messages. 
-*/
+   This structure specifies the type of payload in various messages.
+ */
 
 #define TPM_PT_ASYM             0x01    /* The entity is an asymmetric key */
 #define TPM_PT_BIND             0x02    /* The entity is bound data */
@@ -384,9 +383,9 @@
 
 /* 4.3 TPM_ENTITY_TYPE rev 100
 
-   This specifies the types of entity that are supported by the TPM. 
+   This specifies the types of entity that are supported by the TPM.
 
-   The LSB is used to indicate the entity type.  The MSB is used to indicate the ADIP 
+   The LSB is used to indicate the entity type.  The MSB is used to indicate the ADIP
    encryption scheme when applicable.
 
    For compatibility with TPM 1.1, this mapping is maintained:
@@ -398,7 +397,7 @@
    0x0005 specifies a key entity with XOR encryption
 
    When the entity is not being used for ADIP encryption, the MSB MUST be 0x00.
-*/
+ */
 
 /* TPM_ENTITY_TYPE LSB Values (entity type) */
 
@@ -431,10 +430,10 @@
 
    2. The handle value SHALL provide assurance that collisions SHOULD not occur in 2^24 handles
 
-   4.4.1 Reserved Key Handles 
+   4.4.1 Reserved Key Handles
 
-   The reserved key handles. These values specify specific keys or specific actions for the TPM. 
-*/
+   The reserved key handles. These values specify specific keys or specific actions for the TPM.
+ */
 
 /* 4.4.1 Reserved Key Handles rev 87
 
@@ -442,7 +441,7 @@
 
    TPM_KH_TRANSPORT indicates to TPM_EstablishTransport that there is no encryption key, and that
    the "secret" wrapped parameters are actually passed unencrypted.
-*/
+ */
 
 #define TPM_KH_SRK              0x40000000 /* The handle points to the SRK */
 #define TPM_KH_OWNER            0x40000001 /* The handle points to the TPM Owner */
@@ -457,8 +456,8 @@
 
 /* 4.5 TPM_STARTUP_TYPE rev 87
 
-   To specify what type of startup is occurring.  
-*/
+   To specify what type of startup is occurring.
+ */
 
 #define TPM_ST_CLEAR            0x0001 /* The TPM is starting up from a clean state */
 #define TPM_ST_STATE            0x0002 /* The TPM is starting up from a saved state */
@@ -476,18 +475,18 @@
    determine which keys are loaded after TPM_Startup.
 
    31-9 No information and MUST be FALSE
-   
+
    8 TPM_RT_DAA_TPM resources are initialized by TPM_Startup(ST_STATE)
-   7 TPM_Startup has no effect on auditDigest 
-   6 auditDigest is set to all zeros on TPM_Startup(ST_CLEAR) but not on other types of TPM_Startup 
+   7 TPM_Startup has no effect on auditDigest
+   6 auditDigest is set to all zeros on TPM_Startup(ST_CLEAR) but not on other types of TPM_Startup
    5 auditDigest is set to all zeros on TPM_Startup(any)
    4 TPM_RT_KEY Deprecated, as the meaning was subject to interpretation.  (Was:TPM_RT_KEY resources
      are initialized by TPM_Startup(ST_ANY))
-   3 TPM_RT_AUTH resources are initialized by TPM_Startup(ST_STATE) 
-   2 TPM_RT_HASH resources are initialized by TPM_Startup(ST_STATE) 
-   1 TPM_RT_TRANS resources are initialized by TPM_Startup(ST_STATE) 
-   0 TPM_RT_CONTEXT session (but not key) resources are initialized by TPM_Startup(ST_STATE) 
-*/
+   3 TPM_RT_AUTH resources are initialized by TPM_Startup(ST_STATE)
+   2 TPM_RT_HASH resources are initialized by TPM_Startup(ST_STATE)
+   1 TPM_RT_TRANS resources are initialized by TPM_Startup(ST_STATE)
+   0 TPM_RT_CONTEXT session (but not key) resources are initialized by TPM_Startup(ST_STATE)
+ */
 
 
 #define TPM_STARTUP_EFFECTS_ST_STATE_RT_DAA             0x00000100      /* bit 8 */
@@ -500,10 +499,10 @@
 #define TPM_STARTUP_EFFECTS_ST_STATE_RT_TRANS           0x00000002      /* bit 1 */
 #define TPM_STARTUP_EFFECTS_ST_STATE_RT_CONTEXT         0x00000001      /* bit 0 */
 
-/* 4.7 TPM_PROTOCOL_ID rev 87 
+/* 4.7 TPM_PROTOCOL_ID rev 87
 
-   This value identifies the protocol in use. 
-*/
+   This value identifies the protocol in use.
+ */
 
 #define TPM_PID_NONE            0x0000  /* kgold - added */
 #define TPM_PID_OIAP            0x0001  /* The OIAP protocol. */
@@ -516,10 +515,10 @@
 
 /* 4.8 TPM_ALGORITHM_ID rev 99
 
-   This table defines the types of algorithms that may be supported by the TPM. 
+   This table defines the types of algorithms that may be supported by the TPM.
 
    The TPM MUST support the algorithms TPM_ALG_RSA, TPM_ALG_SHA, TPM_ALG_HMAC, and TPM_ALG_MGF1
-*/
+ */
 
 #define TPM_ALG_RSA     0x00000001      /* The RSA algorithm. */
 /* #define TPM_ALG_DES  0x00000002         (was the DES algorithm) */
@@ -535,7 +534,7 @@
 
 /* 4.9 TPM_PHYSICAL_PRESENCE rev 87
 
-*/
+ */
 
 #define TPM_PHYSICAL_PRESENCE_HW_DISABLE        0x0200 /* Sets the physicalPresenceHWEnable to FALSE
                                                         */
@@ -557,7 +556,7 @@
 
    The scheme indicates how the StartMigrate command should handle the migration of the encrypted
    blob.
-*/
+ */
 
 #define TPM_MS_MIGRATE                  0x0001 /* A public key that can be used with all TPM
                                                   migration commands other than 'ReWrap' mode. */
@@ -570,10 +569,10 @@
 #define TPM_MS_RESTRICT_APPROVE         0x0005 /* The key is to be migrated to an entity approved by
                                                   a Migration Authority using double wrapping */
 
-/* 4.11 TPM_EK_TYPE rev 87 
+/* 4.11 TPM_EK_TYPE rev 87
 
    This structure indicates what type of information that the EK is dealing with.
-*/
+ */
 
 #define TPM_EK_TYPE_ACTIVATE    0x0001  /* The blob MUST be TPM_EK_BLOB_ACTIVATE */
 #define TPM_EK_TYPE_AUTH        0x0002  /* The blob MUST be TPM_EK_BLOB_AUTH */
@@ -581,7 +580,7 @@
 /* 4.12 TPM_PLATFORM_SPECIFIC rev 87
 
    This enumerated type indicates the platform specific spec that the information relates to.
-*/
+ */
 
 #define TPM_PS_PC_11            0x0001  /* PC Specific version 1.1 */
 #define TPM_PS_PC_12            0x0002  /* PC Specific version 1.2 */
@@ -596,7 +595,7 @@
 
    Each key has a setting defining the encryption and signature scheme to use. The selection of a
    key usage value limits the choices of encryption and signature schemes.
-*/
+ */
 
 #define TPM_KEY_UNINITIALIZED   0x0000  /* NOTE: Added.  This seems like a good place to indicate
                                            that a TPM_KEY structure has not been initialized */
@@ -631,30 +630,30 @@
 
    The TPM MUST check that the encryption scheme defined for use with the key is a valid scheme for
    the key type, as follows:
-*/
+ */
 
-#define TPM_ES_NONE                     0x0001 
-#define TPM_ES_RSAESPKCSv15             0x0002 
-#define TPM_ES_RSAESOAEP_SHA1_MGF1      0x0003 
-#define TPM_ES_SYM_CTR                  0x0004 
+#define TPM_ES_NONE                     0x0001
+#define TPM_ES_RSAESPKCSv15             0x0002
+#define TPM_ES_RSAESOAEP_SHA1_MGF1      0x0003
+#define TPM_ES_SYM_CTR                  0x0004
 #define TPM_ES_SYM_OFB                  0x0005
 
 /* 5.8.1 TPM_SIG_SCHEME Mandatory Key Usage Schemes rev 99
 
    The TPM MUST check that the signature scheme defined for use with the key is a valid scheme for
    the key type, as follows:
-*/
+ */
 
-#define TPM_SS_NONE                     0x0001 
-#define TPM_SS_RSASSAPKCS1v15_SHA1      0x0002 
-#define TPM_SS_RSASSAPKCS1v15_DER       0x0003 
-#define TPM_SS_RSASSAPKCS1v15_INFO      0x0004 
+#define TPM_SS_NONE                     0x0001
+#define TPM_SS_RSASSAPKCS1v15_SHA1      0x0002
+#define TPM_SS_RSASSAPKCS1v15_DER       0x0003
+#define TPM_SS_RSASSAPKCS1v15_INFO      0x0004
 
 /* 5.9 TPM_AUTH_DATA_USAGE rev 110
 
    The indication to the TPM when authorization sessions for an entity are required.  Future
    versions may allow for more complex decisions regarding AuthData checking.
-*/
+ */
 
 #define TPM_AUTH_NEVER         0x00 /* This SHALL indicate that usage of the key without
                                        authorization is permitted. */
@@ -663,22 +662,22 @@
                                        authorization MUST be performed. */
 
 #define TPM_NO_READ_PUBKEY_AUTH 0x03 /* This SHALL indicate that on commands that require the TPM to
-                                       use the the key, the authorization MUST be performed. For
-                                       commands that cause the TPM to read the public portion of the
-                                       key, but not to use the key (e.g. TPM_GetPubKey), the
-                                       authorization may be omitted. */
+                                        use the the key, the authorization MUST be performed. For
+                                        commands that cause the TPM to read the public portion of the
+                                        key, but not to use the key (e.g. TPM_GetPubKey), the
+                                        authorization may be omitted. */
 
 /* 5.10 TPM_KEY_FLAGS rev 110
 
    This table defines the meanings of the bits in a TPM_KEY_FLAGS structure, used in
    TPM_STORE_ASYMKEY and TPM_CERTIFY_INFO.
-   
+
    The value of TPM_KEY_FLAGS MUST be decomposed into individual mask values. The presence of a mask
    value SHALL have the effect described in the above table
-   
+
    On input, all undefined bits MUST be zero. The TPM MUST return an error if any undefined bit is
    set. On output, the TPM MUST set all undefined bits to zero.
-*/
+ */
 
 #ifdef TPM_V12
 #define TPM_KEY_FLAGS_MASK      0x0000001f
@@ -723,7 +722,7 @@
    26:0 reserved MUST be 0
 
    The default value of TPM_CMK_Delegate is zero (0)
-*/
+ */
 
 #define TPM_CMK_DELEGATE_SIGNING        0x80000000 /* When set to 1, this bit SHALL indicate that a
                                                       delegated command may manipulate a CMK of
@@ -746,7 +745,7 @@
    These tags indicate to the TPM the construction of the command either as input or as output. The
    AUTH indicates that there are one or more AuthData values that follow the command
    parameters.
-*/
+ */
 
 #define TPM_TAG_RQU_COMMAND             0x00C1 /* A command with no authentication.  */
 #define TPM_TAG_RQU_AUTH1_COMMAND       0x00C2 /* An authenticated command with one authentication
@@ -762,20 +761,20 @@
 
 /* TIS 7.2 PCR Attributes
 
-*/
+ */
 
-#define TPM_DEBUG_PCR 		16
-#define TPM_LOCALITY_4_PCR	17
-#define TPM_LOCALITY_3_PCR	18
-#define TPM_LOCALITY_2_PCR	19
-#define TPM_LOCALITY_1_PCR	20
+#define TPM_DEBUG_PCR           16
+#define TPM_LOCALITY_4_PCR      17
+#define TPM_LOCALITY_3_PCR      18
+#define TPM_LOCALITY_2_PCR      19
+#define TPM_LOCALITY_1_PCR      20
 
 /* 10.9 TPM_KEY_CONTROL rev 87
 
    Attributes that can control various aspects of key usage and manipulation.
 
    Allows for controlling of the key when loaded and how to handle TPM_Startup issues.
-*/
+ */
 
 #define TPM_KEY_CONTROL_OWNER_EVICT     0x00000001      /* Owner controls when the key is evicted
                                                            from the TPM. When set the TPM MUST
@@ -795,8 +794,8 @@
 
 /* 21.1 TPM_CAPABILITY_AREA rev 115
 
-   To identify a capability to be queried. 
-*/
+   To identify a capability to be queried.
+ */
 
 #define TPM_CAP_ORD             0x00000001 /* Boolean value. TRUE indicates that the TPM supports
                                               the ordinal. FALSE indicates that the TPM does not
@@ -846,7 +845,7 @@
                                               TPM_ExecuteTransport and
                                               TPM_ReleaseTransportSigned. FALSE indicates that for
                                               these three commands the algorithm is not supported."
-                                              */
+                                            */
 #define TPM_CAP_HANDLE          0x00000014 /* A TPM_KEY_HANDLE_LIST structure that enumerates all
                                               handles currently loaded in the TPM for the given
                                               resource type.  */
@@ -893,12 +892,12 @@
 
    There is a similar relationship between the constants TPM_CAP_PROP_MAX_COUNTERS and
    TPM_CAP_PROP_MAX_CONTEXT and the varying TPM_CAP_PROP_COUNTERS and TPM_CAP_PROP_CONTEXT.
-   
+
    In one typical implementation where authorization and transport sessions reside in separate
    pools, TPM_CAP_PROP_SESSIONS will be the sum of TPM_CAP_PROP_AUTHSESS and TPM_CAP_PROP_TRANSESS.
    In another typical implementation where authorization and transport sessions share the same pool,
    TPM_CAP_PROP_SESSIONS, TPM_CAP_PROP_AUTHSESS, and TPM_CAP_PROP_TRANSESS will all be equal.
-*/
+ */
 
 #define TPM_CAP_PROP_PCR                0x00000101    /* uint32_t value. Returns the number of PCR
                                                          registers supported by the TPM */
@@ -928,7 +927,7 @@
                                                          transport sessions the TPM supports. */
 #define TPM_CAP_PROP_MAX_COUNTERS       0x0000010F    /* uint32_t. The maximum number of monotonic
                                                          counters under control of TPM_CreateCounter
-                                                         */
+                                                       */
 #define TPM_CAP_PROP_MAX_KEYS           0x00000110    /* uint32_t. The maximum number of 2048 RSA
                                                          keys that the TPM can support. The number
                                                          does not include the EK or SRK. */
@@ -944,8 +943,8 @@
 #define TPM_CAP_PROP_TIS_TIMEOUT        0x00000115    /* A 4 element array of uint32_t values each
                                                          denoting the timeout value in microseconds
                                                          for the following in this order:
-                                                         
-                                                         TIMEOUT_A, TIMEOUT_B, TIMEOUT_C, TIMEOUT_D 
+
+                                                         TIMEOUT_A, TIMEOUT_B, TIMEOUT_C, TIMEOUT_D
 
                                                          Where these timeouts are to be used is
                                                          determined by the platform specific TPM
@@ -988,20 +987,20 @@
                                                          MEDIUM_DURATION, LONG_DURATION */
 #define TPM_CAP_PROP_ACTIVE_COUNTER     0x00000122      /* TPM_COUNT_ID. The id of the current
                                                            counter. 0xff..ff if no counter is active
-                                                        */
+                                                         */
 #define TPM_CAP_PROP_MAX_NV_AVAILABLE   0x00000123      /*uint32_t. Deprecated.  The maximum number
-                                                          of NV space that can be allocated, MAY
-                                                          vary with time and circumstances.  This
-                                                          capability was not implemented
-                                                          consistently, and is replaced by
-                                                          TPM_NV_INDEX_TRIAL. */
+                                                           of NV space that can be allocated, MAY
+                                                           vary with time and circumstances.  This
+                                                           capability was not implemented
+                                                           consistently, and is replaced by
+                                                           TPM_NV_INDEX_TRIAL. */
 #define TPM_CAP_PROP_INPUT_BUFFER       0x00000124      /* uint32_t. The maximum size of the TPM
                                                            input buffer or output buffer in
                                                            bytes. */
 
 /* 21.4 Set_Capability Values rev 107
  */
-   
+
 #define TPM_SET_PERM_FLAGS      0x00000001      /* The ability to set a value is field specific and
                                                    a review of the structure will disclose the
                                                    ability and requirements to set a value */
@@ -1056,16 +1055,16 @@
 #define  TPM_SF_PHYSICALPRESENCE                3
 #define  TPM_SF_PHYSICALPRESENCELOCK            4
 #define  TPM_SF_BGLOBALLOCK                     5
-                                                
-/* TPM_STANY_FLAGS */                           
-                                                
+
+/* TPM_STANY_FLAGS */
+
 #define  TPM_AF_POSTINITIALISE                  1
 #define  TPM_AF_LOCALITYMODIFIER                2
 #define  TPM_AF_TRANSPORTEXCLUSIVE              3
 #define  TPM_AF_TOSPRESENT                      4
-                                                
-/* TPM_PERMANENT_DATA */                        
-                                                
+
+/* TPM_PERMANENT_DATA */
+
 #define  TPM_PD_REVMAJOR                        1
 #define  TPM_PD_REVMINOR                        2
 #define  TPM_PD_TPMPROOF                        3
@@ -1090,9 +1089,9 @@
 #define  TPM_PD_RESTRICTDELEGATE                23
 #define  TPM_PD_TPMDAASEED                      24
 #define  TPM_PD_DAAPROOF                        25
-                                                
-/* TPM_STCLEAR_DATA */                          
-                                                
+
+/* TPM_STCLEAR_DATA */
+
 #define  TPM_SD_CONTEXTNONCEKEY                 1
 #define  TPM_SD_COUNTID                         2
 #define  TPM_SD_OWNERREFERENCE                  3
@@ -1103,9 +1102,9 @@
 /* TPM_STCLEAR_DATA -> deferredPhysicalPresence bits */
 
 #define  TPM_DPP_UNOWNED_FIELD_UPGRADE  0x00000001      /* bit 0 TPM_FieldUpgrade */
-                                
-/* TPM_STANY_DATA */                            
-                                                
+
+/* TPM_STANY_DATA */
+
 #define  TPM_AD_CONTEXTNONCESESSION             1
 #define  TPM_AD_AUDITDIGEST                     2
 #define  TPM_AD_CURRENTTICKS                    3
@@ -1119,13 +1118,13 @@
     as flag indicators, the next byte contains values indicating what committee designated the
     ordinal, and the final two bytes contain the Command Ordinal Index.
 
-       3                   2                   1 
+       3                   2                   1
      1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |P|C|V| Reserved|    Purview    |     Command Ordinal Index     |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |P|C|V| Reserved|    Purview    |     Command Ordinal Index     |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-    Where: 
+    Where:
 
     P is Protected/Unprotected command. When 0 the command is a Protected command, when 1 the
     command is an Unprotected command.
@@ -1136,8 +1135,8 @@
     V is TPM/Vendor command. When 0 the command is TPM defined, when 1 the command is vendor
     defined.
 
-    All reserved area bits are set to 0. 
-*/
+    All reserved area bits are set to 0.
+ */
 
 /* The following masks are created to allow for the quick definition of the commands */
 
@@ -1320,9 +1319,9 @@
      The TPM_NV_INDEX is a 32-bit value.
      3                   2                   1
      1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |T|P|U|D| resvd |   Purview      |         Index                |
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |T|P|U|D| resvd |   Purview      |         Index                |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
      Where:
 
@@ -1334,13 +1333,13 @@
         TPM_NV_DefineSpace operation will fail after nvLocked is set TRUE.
 
      a. TCG reserved areas MAY have D set to 0 or 1
-        
+
      4. Purview is the value used to indicate the platform specific area. This value is the
      same as used for command ordinals.
 
      a. The TPM MUST reject purview values that the TPM cannot support. This means that an
      index value for a PDA MUST be rejected by a TPM designed to work only on the PC Client.
-*/
+ */
 
 #define TPM_NV_INDEX_T_BIT              0x80000000
 #define TPM_NV_INDEX_P_BIT              0x40000000
@@ -1359,7 +1358,7 @@
    A platform specific specification may add additional required index values for the platform.
 
    The TPM MUST reserve the space as indicated for the required index values
-*/
+ */
 
 #define TPM_NV_INDEX_LOCK  0xFFFFFFFF   /* This value turns on the NV authorization
                                            protections. Once executed all NV areas use the
@@ -1368,30 +1367,30 @@
                                            Attempting to execute TPM_NV_DefineSpace on this value
                                            with non-zero size MAY result in a TPM_BADINDEX
                                            response.
-                                        */
+                                         */
 
 #define TPM_NV_INDEX0      0x00000000   /* This value allows for the setting of the bGlobalLock
                                            flag, which is only reset on TPM_Startup(ST_Clear)
 
                                            Attempting to execute TPM_NV_WriteValue with a size other
                                            than zero MAY result in the TPM_BADINDEX error code.
-                                        */
+                                         */
 
 #define TPM_NV_INDEX_DIR   0x10000001   /* Size MUST be 20. This index points to the deprecated DIR
                                            command area from 1.1.  The TPM MUST map this reserved
                                            space to be the area operated on by the 1.1 DIR commands.
-                                           */
+                                         */
 
 /* 19.1.2 Reserved Index values rev 116
 
-  The reserved values are defined to avoid index collisions. These values are not in each and every
-  TPM.
+   The reserved values are defined to avoid index collisions. These values are not in each and every
+   TPM.
 
-  1. The reserved index values are to avoid index value collisions. 
-  2. These index values require a TPM_DefineSpace to have the area for the index allocated 
-  3. A platform specific specification MAY indicate that reserved values are required. 
-  4. The reserved index values MAY have their D bit set by the TPM vendor to permanently
-*/
+   1. The reserved index values are to avoid index value collisions.
+   2. These index values require a TPM_DefineSpace to have the area for the index allocated
+   3. A platform specific specification MAY indicate that reserved values are required.
+   4. The reserved index values MAY have their D bit set by the TPM vendor to permanently
+ */
 
 #define TPM_NV_INDEX_TPM                0x0000Fxxx      /* Reserved for TPM use */
 #define TPM_NV_INDEX_EKCert             0x0000F000      /* The Endorsement credential */
@@ -1411,7 +1410,7 @@
 #define TPM_NV_INDEX_PERIPHERAL         0x0005xxxx      /* Reserved for peripheral use */
 #define TPM_NV_INDEX_TSS                0x0006xxxx      /* Reserved for TSS use */
 #define TPM_NV_INDEX_GROUP_RESV         0x00xxxxxx      /* Reserved for TCG WG use */
-#endif                                 
+#endif
 
 #define TPM_NV_INDEX_GPIO_00            0x00011600      /* GPIO-Express-00 */
 
@@ -1423,7 +1422,7 @@
    The attributes TPM_NV_PER_AUTHREAD and TPM_NV_PER_OWNERREAD cannot both be set to TRUE.
    Similarly, the attributes TPM_NV_PER_AUTHWRITE and TPM_NV_PER_OWNERWRITE cannot both be set to
    TRUE.
-*/
+ */
 
 #define TPM_NV_PER_READ_STCLEAR         0x80000000 /* 31: The value can be read until locked by a
                                                       read with a data size of 0.  It can only be
@@ -1432,7 +1431,7 @@
                                                       bReadSTClear. */
 /* #define 30:19 Reserved */
 #define TPM_NV_PER_AUTHREAD             0x00040000 /* 18: The value requires authorization to read
-                                                      */
+                                                    */
 #define TPM_NV_PER_OWNERREAD            0x00020000 /* 17: The value requires TPM Owner authorization
                                                       to read. */
 #define TPM_NV_PER_PPREAD               0x00010000 /* 16: The value requires physical presence to
@@ -1454,7 +1453,7 @@
                                                       operation */
 /* #define 11:3 Reserved for write additions */
 #define TPM_NV_PER_AUTHWRITE            0x00000004 /* 2: The value requires authorization to write
-                                                      */
+                                                    */
 #define TPM_NV_PER_OWNERWRITE           0x00000002 /* 1: The value requires TPM Owner authorization
                                                       to write */
 #define TPM_NV_PER_PPWRITE              0x00000001 /* 0: The value requires physical presence to
@@ -1487,16 +1486,16 @@
 #define TPM_DELEGATE_SetCapability                      12
 #define TPM_DELEGATE_MakeIdentity                       11
 #define TPM_DELEGATE_ActivateIdentity                   10
-#define TPM_DELEGATE_OwnerReadPubek                     9 
-#define TPM_DELEGATE_DisablePubekRead                   8 
-#define TPM_DELEGATE_SetRedirection                     7 
-#define TPM_DELEGATE_FieldUpgrade                       6 
-#define TPM_DELEGATE_Delegate_UpdateVerification        5 
-#define TPM_DELEGATE_CreateCounter                      4 
-#define TPM_DELEGATE_ReleaseCounterOwner                3 
-#define TPM_DELEGATE_Delegate_Manage                    2 
-#define TPM_DELEGATE_Delegate_CreateOwnerDelegation     1 
-#define TPM_DELEGATE_DAA_Sign                           0 
+#define TPM_DELEGATE_OwnerReadPubek                     9
+#define TPM_DELEGATE_DisablePubekRead                   8
+#define TPM_DELEGATE_SetRedirection                     7
+#define TPM_DELEGATE_FieldUpgrade                       6
+#define TPM_DELEGATE_Delegate_UpdateVerification        5
+#define TPM_DELEGATE_CreateCounter                      4
+#define TPM_DELEGATE_ReleaseCounterOwner                3
+#define TPM_DELEGATE_Delegate_Manage                    2
+#define TPM_DELEGATE_Delegate_CreateOwnerDelegation     1
+#define TPM_DELEGATE_DAA_Sign                           0
 
 /* Per2 bits */
 #define TPM_DELEGATE_PER2_MASK                          0x00000000      /* mask of legal bits */
@@ -1526,16 +1525,16 @@
 #define TPM_KEY_DELEGATE_CertifyKey                     12
 #define TPM_KEY_DELEGATE_CreateWrapKey                  11
 #define TPM_KEY_DELEGATE_CMK_CreateBlob                 10
-#define TPM_KEY_DELEGATE_CreateMigrationBlob            9 
-#define TPM_KEY_DELEGATE_ConvertMigrationBlob           8 
-#define TPM_KEY_DELEGATE_Delegate_CreateKeyDelegation   7 
-#define TPM_KEY_DELEGATE_ChangeAuth                     6 
-#define TPM_KEY_DELEGATE_GetPubKey                      5 
-#define TPM_KEY_DELEGATE_UnBind                         4 
-#define TPM_KEY_DELEGATE_Quote                          3 
-#define TPM_KEY_DELEGATE_Unseal                         2 
-#define TPM_KEY_DELEGATE_Seal                           1 
-#define TPM_KEY_DELEGATE_LoadKey                        0 
+#define TPM_KEY_DELEGATE_CreateMigrationBlob            9
+#define TPM_KEY_DELEGATE_ConvertMigrationBlob           8
+#define TPM_KEY_DELEGATE_Delegate_CreateKeyDelegation   7
+#define TPM_KEY_DELEGATE_ChangeAuth                     6
+#define TPM_KEY_DELEGATE_GetPubKey                      5
+#define TPM_KEY_DELEGATE_UnBind                         4
+#define TPM_KEY_DELEGATE_Quote                          3
+#define TPM_KEY_DELEGATE_Unseal                         2
+#define TPM_KEY_DELEGATE_Seal                           1
+#define TPM_KEY_DELEGATE_LoadKey                        0
 
 /* Per2 bits */
 #define TPM_KEY_DELEGATE_PER2_MASK                      0x00000000      /* mask of legal bits */
@@ -1545,11 +1544,11 @@
 
    These flags indicate the operational state of the delegation and family table. These flags
    are additions to TPM_PERMANENT_FLAGS and are not stand alone values.
-*/
+ */
 
 #define TPM_DELEGATE_ADMIN_LOCK 0x00000002 /* TRUE: Some TPM_Delegate_XXX commands are locked and
                                               return TPM_DELEGATE_LOCK
-                                             
+
                                               FALSE: TPM_Delegate_XXX commands are available
 
                                               Default is FALSE */
@@ -1559,7 +1558,7 @@
 /* 20.14 TPM_FAMILY_OPERATION Values rev 87
 
    These are the opFlag values used by TPM_Delegate_Manage.
-*/
+ */
 
 #define TPM_FAMILY_CREATE       0x00000001      /* Create a new family */
 #define TPM_FAMILY_ENABLE       0x00000002      /* Set or reset the enable flag for this family. */
@@ -1567,9 +1566,9 @@
 #define TPM_FAMILY_INVALIDATE   0x00000004      /* Invalidate a specific family row. */
 
 /* 21.9 TPM_DA_STATE rev 100
-   
+
    TPM_DA_STATE enumerates the possible states of the dictionary attack mitigation logic.
-*/
+ */
 
 #define TPM_DA_STATE_INACTIVE   0x00    /* The dictionary attack mitigation logic is currently
                                            inactive */
@@ -1590,9 +1589,9 @@
                                                       lock has been active.  */
 
 /* 22. DAA Structures rev 91
-   
+
    All byte and bit areas are byte arrays treated as large integers
-*/
+ */
 
 #define DAA_SIZE_r0             43
 #define DAA_SIZE_r1             43
@@ -1613,7 +1612,7 @@
 
 /* 22.2 Constant definitions rev 91 */
 
-#define DAA_power0      104  
-#define DAA_power1      1024  
+#define DAA_power0      104
+#define DAA_power1      1024
 
 #endif

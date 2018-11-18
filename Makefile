@@ -6,19 +6,9 @@ SOURCES = \
 	src/tpmkey.c
 
 LIBTPM = \
-    libtpm/delegation.c libtpm/eviction.c libtpm/hmac.c libtpm/keys.c libtpm/keyswap.c libtpm/oiaposap.c libtpm/rng.c \
-	libtpm/serialize.c libtpm/session.c libtpm/seal.c libtpm/miscfunc.c libtpm/transport.c libtpm/tpmutil.c libtpm/tpmutil_dev.c
-	#libtpm/auditing.c libtpm/bind.c libtpm/context.c \
-	#libtpm/counter.c   libtpm/dir.c \
-	#
-	#libtpm/identity.c libtpm/keys.c libtpm/keyswap.c \
-	#libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
-	# libtpm/optin.c libtpm/pcrs.c \
-	# libtpm/raw.c 
-	# c libtpm/session.c libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
-	# libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_dev.c 
-# libtpm/tpmutil_unixio.c libtpm/tpmutil_sock.c libtpm/tpmutil_libtpms.c
-# libtpm/chgauth.c  libtpm/management.c libtpm/owner.c libtpm/ownertpmdiag.c libtpm/maintenance.c libtpm/daa.c libtpm/debug.c
+    libtpm/delegation.c libtpm/eviction.c libtpm/hmac.c libtpm/keys.c libtpm/keyswap.c libtpm/oiaposap.c \
+	libtpm/pcrs.c libtpm/rng.c libtpm/serialize.c libtpm/session.c libtpm/seal.c libtpm/miscfunc.c \
+	libtpm/transport.c libtpm/tpmutil.c libtpm/tpmutil_dev.c
 
 # set required C flags
 CFLAGS += -mrdrnd -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1
@@ -42,13 +32,16 @@ dist: all
 
 # build for debug
 debug: CFLAGS += -O0 -g3 -Wall -Wextra
-# -DDEBUG
 debug: LDFLAGS +=
 debug: all
 
-$(BINARY): $(OBJECTS) $(LIBTPM_O)
+$(BINARY): $(OBJECTS) obj/libtpm.a
 	@echo -e "\x1b[33mCCLD\x1b[0m $<"
 	$(CC) $(LDFLAGS) $^ $(LIBRARIES) -o $@
+
+obj/libtpm.a: $(LIBTPM_O)
+	@echo -e "\x1b[33mAR\x1b[0m   $@"
+	ar rcs $@ $^
 
 obj/%.d: libtpm/%.c
 	@test -d obj || mkdir obj

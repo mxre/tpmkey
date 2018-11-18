@@ -8,22 +8,22 @@
 /* (c) Copyright IBM Corporation 2006, 2010.					*/
 /*										*/
 /* All rights reserved.								*/
-/* 										*/
+/*                                                                              */
 /* Redistribution and use in source and binary forms, with or without		*/
 /* modification, are permitted provided that the following conditions are	*/
 /* met:										*/
-/* 										*/
+/*                                                                              */
 /* Redistributions of source code must retain the above copyright notice,	*/
 /* this list of conditions and the following disclaimer.			*/
-/* 										*/
+/*                                                                              */
 /* Redistributions in binary form must reproduce the above copyright		*/
 /* notice, this list of conditions and the following disclaimer in the		*/
 /* documentation and/or other materials provided with the distribution.		*/
-/* 										*/
+/*                                                                              */
 /* Neither the names of the IBM Corporation nor the names of its		*/
 /* contributors may be used to endorse or promote products derived from		*/
 /* this software without specific prior written permission.			*/
-/* 										*/
+/*                                                                              */
 /* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS		*/
 /* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT		*/
 /* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR	*/
@@ -42,21 +42,21 @@
 
 /* 16. Return codes rev 99
 
-   The TPM has five types of return code. One indicates successful operation and four indicate 
-   failure. TPM_SUCCESS (00000000) indicates successful execution. The failure reports are: 
-   TPM defined fatal errors (00000001 to 000003FF), vendor defined fatal errors (00000400 to 
-   000007FF), TPM defined non-fatal errors (00000800 to 00000BFF), and vendor defined 
+   The TPM has five types of return code. One indicates successful operation and four indicate
+   failure. TPM_SUCCESS (00000000) indicates successful execution. The failure reports are:
+   TPM defined fatal errors (00000001 to 000003FF), vendor defined fatal errors (00000400 to
+   000007FF), TPM defined non-fatal errors (00000800 to 00000BFF), and vendor defined
    non-fatal errors (00000C00 to 00000FFF).
-   
-   The range of vendor defined non-fatal errors was determined by the TSS-WG, which defined 
+
+   The range of vendor defined non-fatal errors was determined by the TSS-WG, which defined
    XXXX YCCC with XXXX as OS specific and Y defining the TSS SW stack layer (0: TPM layer)
-   
-   All failure cases return only a non-authenticated fixed set of information. This is because 
-   the failure may have been due to authentication or other factors, and there is no possibility 
+
+   All failure cases return only a non-authenticated fixed set of information. This is because
+   the failure may have been due to authentication or other factors, and there is no possibility
    of producing an authenticated response.
-   
-   Fatal errors also terminate any authorization sessions. This is a result of returning only the 
-   error code, as there is no way to return the nonces necessary to maintain an authorization 
+
+   Fatal errors also terminate any authorization sessions. This is a result of returning only the
+   error code, as there is no way to return the nonces necessary to maintain an authorization
    session. Non-fatal errors do not terminate authorization sessions.
 
    The return code MUST use the following base. The return code MAY be TCG defined or vendor
@@ -123,7 +123,7 @@
 #define TPM_WRONG_ENTITYTYPE    TPM_BASE + 37 /* The submitted entity type is not allowed */
 #define TPM_INVALID_POSTINIT    TPM_BASE + 38 /* The command was received in the wrong sequence
                                                  relative to TPM_Init and a subsequent TPM_Startup
-                                                 */
+                                               */
 #define TPM_INAPPROPRIATE_SIG   TPM_BASE + 39 /* Signed data cannot include additional DER
                                                  information */
 #define TPM_BAD_KEY_PROPERTY    TPM_BASE + 40 /* The key properties in TPM_KEY_PARMs are not
@@ -195,7 +195,7 @@
                                                  family */
 #define TPM_DELEGATE_ADMIN      TPM_BASE + 77 /* Delegation table management not enabled */
 #define TPM_TRANSPORT_NOTEXCLUSIVE TPM_BASE + 78 /* There was a command executed outside of an
-                                                 exclusive transport session */
+                                                    exclusive transport session */
 #define TPM_OWNER_CONTROL       TPM_BASE + 79 /* Attempt to context save a owner evict controlled
                                                  key */
 #define TPM_DAA_RESOURCES       TPM_BASE + 80 /* The DAA command has no resources available to
@@ -223,7 +223,7 @@
 #define TPM_MA_SOURCE           TPM_BASE + 94 /* Migration source incorrect */
 #define TPM_MA_AUTHORITY        TPM_BASE + 95 /* Incorrect migration authority */
 #define TPM_PERMANENTEK         TPM_BASE + 97 /* Attempt to revoke the EK and the EK is not revocable */
-#define TPM_BAD_SIGNATURE       TPM_BASE + 98 /* Bad signature of CMK ticket */ 
+#define TPM_BAD_SIGNATURE       TPM_BASE + 98 /* Bad signature of CMK ticket */
 #define TPM_NOCONTEXTSPACE      TPM_BASE + 99 /* There is no room in the context list for additional
                                                  contexts */
 
@@ -242,8 +242,8 @@
                                                                 resources that have not been
                                                                 tested. */
 #define TPM_DEFEND_LOCK_RUNNING TPM_BASE + TPM_NON_FATAL + 3
-                                                        /* The TPM is defending against dictionary
-                                                           attacks and is in some time-out
-                                                           period. */
+/* The TPM is defending against dictionary
+   attacks and is in some time-out
+   period. */
 
 #endif

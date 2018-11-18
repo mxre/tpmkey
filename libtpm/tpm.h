@@ -1,29 +1,29 @@
 /********************************************************************************/
 /*										*/
-/*			     	TPM Utilities					*/
-/*			     Written by J. Kravitz     				*/
+/*			        TPM Utilities					*/
+/*			     Written by J. Kravitz                              */
 /*		       IBM Thomas J. Watson Research Center			*/
 /*	      $Id: tpm.h 4702 2013-01-03 21:26:29Z kgoldman $			*/
 /*										*/
 /* (c) Copyright IBM Corporation 2006, 2010.					*/
 /*										*/
 /* All rights reserved.								*/
-/* 										*/
+/*                                                                              */
 /* Redistribution and use in source and binary forms, with or without		*/
 /* modification, are permitted provided that the following conditions are	*/
 /* met:										*/
-/* 										*/
+/*                                                                              */
 /* Redistributions of source code must retain the above copyright notice,	*/
 /* this list of conditions and the following disclaimer.			*/
-/* 										*/
+/*                                                                              */
 /* Redistributions in binary form must reproduce the above copyright		*/
 /* notice, this list of conditions and the following disclaimer in the		*/
 /* documentation and/or other materials provided with the distribution.		*/
-/* 										*/
+/*                                                                              */
 /* Neither the names of the IBM Corporation nor the names of its		*/
 /* contributors may be used to endorse or promote products derived from		*/
 /* this software without specific prior written permission.			*/
-/* 										*/
+/*                                                                              */
 /* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS		*/
 /* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT		*/
 /* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR	*/
@@ -42,15 +42,10 @@
 
 #include <string.h>
 #include <stdint.h>
-#ifdef TPM_POSIX
 #include <netinet/in.h>
-#endif
-#ifdef TPM_WINDOWS
-#include <winsock2.h>
-#endif
 
 #define ERR_MASK             0x80000000 /* mask to define error state */
-/* keep 0x8001000 unassigned since the bash only sees the lowest byte! */ 
+/* keep 0x8001000 unassigned since the bash only sees the lowest byte! */
 #define ERR_DUMMY            0x80001000
 #define ERR_HMAC_FAIL        0x80001001 /* HMAC authorization verification failed */
 #define ERR_NULL_ARG         0x80001002 /* An argument was NULL that shouldn't be */
@@ -86,31 +81,31 @@
 #define TPM_U32_SIZE                   4
 
 #define TPM_PARAMSIZE_OFFSET           TPM_U16_SIZE
-#define TPM_RETURN_OFFSET              ( TPM_U16_SIZE + TPM_U32_SIZE )
-#define TPM_DATA_OFFSET                ( TPM_RETURN_OFFSET + TPM_U32_SIZE )
+#define TPM_RETURN_OFFSET              (TPM_U16_SIZE + TPM_U32_SIZE)
+#define TPM_DATA_OFFSET                (TPM_RETURN_OFFSET + TPM_U32_SIZE)
 
-
-static inline void store32(unsigned char *const buffer,
+static inline void store32(unsigned char* const buffer,
                            int offset,
                            uint32_t value)
 {
-    int i;
-    for (i = 3; i >= 0; i--) {
-        buffer[offset+i] = (value & 0xff);
-        value >>= 8;
-    }
+        int i;
+
+        for (i = 3; i >= 0; i--) {
+                buffer[offset + i] = (value & 0xff);
+                value >>= 8;
+        }
 }
 
-
-static inline void store16(unsigned char *const buffer,
+static inline void store16(unsigned char* const buffer,
                            int offset,
                            uint16_t value)
 {
-    int i;
-    for (i = 1; i >= 0; i--) {
-        buffer[offset+i] = (value & 0xff);
-        value >>= 8;
-    }
+        int i;
+
+        for (i = 1; i >= 0; i--) {
+                buffer[offset + i] = (value & 0xff);
+                value >>= 8;
+        }
 }
 
 #define STORE32(buffer,offset,value)    store32(buffer, offset, value)
@@ -129,89 +124,93 @@ static inline void store16(unsigned char *const buffer,
 #define LOAD32N(buffer,offset)          load32N(buffer, offset)
 #define LOAD16N(buffer,offset)          load16N(buffer, offset)
 
-static inline uint32_t load32(const unsigned char *buffer, int offset)
+static inline uint32_t load32(const unsigned char* buffer, int offset)
 {
-    int i;
-    uint32_t res = 0;
+        int i;
+        uint32_t res = 0;
 
-    for (i = 0; i <= 3; i++) {
-        res <<= 8;
-        res |= buffer[offset+i];
-    }
-    return res;
+        for (i = 0; i <= 3; i++) {
+                res <<= 8;
+                res |= buffer[offset + i];
+        }
+        return res;
 }
 
-
-static inline uint16_t load16(const unsigned char *buffer, int offset)
+static inline uint16_t load16(const unsigned char* buffer, int offset)
 {
-    int i;
-    uint16_t res = 0;
+        int i;
+        uint16_t res = 0;
 
-    for (i = 0; i <= 1; i++) {
-        res <<= 8;
-        res |= buffer[offset+i];
-    }
-    return res;
+        for (i = 0; i <= 1; i++) {
+                res <<= 8;
+                res |= buffer[offset + i];
+        }
+        return res;
 }
 
-
-static inline uint32_t load32N(const unsigned char *buffer, int offset)
+static inline uint32_t load32N(const unsigned char* buffer, int offset)
 {
-    uint32_t res;
-    memcpy(&res, &buffer[offset], sizeof(res));
-    return res;
+        uint32_t res;
+
+        memcpy(&res, &buffer[offset], sizeof(res));
+        return res;
 }
 
-static inline uint16_t load16N(const unsigned char *buffer, int offset)
+static inline uint16_t load16N(const unsigned char* buffer, int offset)
 {
-    uint16_t res;
-    memcpy(&res, &buffer[offset], sizeof(res));
-    return res;
+        uint16_t res;
+
+        memcpy(&res, &buffer[offset], sizeof(res));
+        return res;
 }
 
-#define TPM_CURRENT_TICKS_SIZE  (sizeof(TPM_STRUCTURE_TAG)+2*TPM_U32_SIZE+TPM_U16_SIZE+TPM_NONCE_SIZE)
+#define TPM_CURRENT_TICKS_SIZE  (sizeof(TPM_STRUCTURE_TAG) + 2 * TPM_U32_SIZE + TPM_U16_SIZE + TPM_NONCE_SIZE)
 
 struct tpm_buffer
 {
-	uint32_t size;
-	uint32_t used;
-	uint32_t flags;
-	unsigned char buffer[TPM_MAX_BUFF_SIZE];
+        uint32_t size;
+        uint32_t used;
+        uint32_t flags;
+        unsigned char buffer[TPM_MAX_BUFF_SIZE];
 };
 
 enum {
-	BUFFER_FLAG_ON_STACK = 1,
+        BUFFER_FLAG_ON_STACK = 1,
 };
 
 #define STACK_TPM_BUFFER(X)                    \
-	struct tpm_buffer X = {                \
-		.size = sizeof( X.buffer ),    \
-		.used = 0,                     \
-		.flags = BUFFER_FLAG_ON_STACK, \
-		.buffer = ""};
+        struct tpm_buffer X = {                \
+                .size = sizeof(X.buffer),    \
+                .used = 0,                     \
+                .flags = BUFFER_FLAG_ON_STACK, \
+                .buffer = ""};
+
 #define RESET_TPM_BUFFER(X) \
-	(X)->used = 0
+        (X)->used = 0
 #define ALLOC_TPM_BUFFER(X,S) \
-	struct tpm_buffer *X = TSS_AllocTPMBuffer(S);
+        struct tpm_buffer* X = TSS_AllocTPMBuffer(S);
+
 #define FREE_TPM_BUFFER(X) \
-	TSS_FreeTPMBuffer(X)
-#define SET_TPM_BUFFER(X, src, len) 					\
-	do {								\
-		uint32_t to_copy = (X)->size > len ? len : (X)->size; 	\
-		memcpy((X)->buffer, src, to_copy);			\
-		(X)->used = to_copy;					\
-	} while (0);
+        TSS_FreeTPMBuffer(X)
+#define SET_TPM_BUFFER(X, src, len)                                     \
+        do {                                                            \
+                uint32_t to_copy = (X)->size > len ? len : (X)->size;   \
+                memcpy((X)->buffer, src, to_copy);                      \
+                (X)->used = to_copy;                                    \
+        } while (0);
 #define IS_TPM_BUFFER_EMPTY(X) \
-	((X)->used == 0)
+        ((X)->used == 0)
 
-struct tpm_buffer *TSS_AllocTPMBuffer(int len);
+struct tpm_buffer* TSS_AllocTPMBuffer(int len);
 
-static inline struct tpm_buffer *clone_tpm_buffer(struct tpm_buffer *orig) {
-	struct tpm_buffer * buf = TSS_AllocTPMBuffer(orig->used + 20);
-	if (buf) {
-		SET_TPM_BUFFER(buf, orig->buffer, orig->used);
-	}
-	return buf;
+
+static inline struct tpm_buffer* clone_tpm_buffer(struct tpm_buffer* orig) {
+        struct tpm_buffer* buf = TSS_AllocTPMBuffer(orig->used + 20);
+
+        if (buf) {
+                SET_TPM_BUFFER(buf, orig->buffer, orig->used);
+        }
+        return buf;
 }
 
 #if defined (__x86_64__)

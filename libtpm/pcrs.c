@@ -1,6 +1,6 @@
 /********************************************************************************/
 /*										*/
-/*			     	TPM PCR Processing Functions			*/
+/*			        TPM PCR Processing Functions			*/
 /*			     Written by J. Kravitz, S. Berger			*/
 /*		       IBM Thomas J. Watson Research Center			*/
 /*	      $Id: pcrs.c 4702 2013-01-03 21:26:29Z kgoldman $			*/
@@ -8,22 +8,22 @@
 /* (c) Copyright IBM Corporation 2006, 2010.					*/
 /*										*/
 /* All rights reserved.								*/
-/* 										*/
+/*                                                                              */
 /* Redistribution and use in source and binary forms, with or without		*/
 /* modification, are permitted provided that the following conditions are	*/
 /* met:										*/
-/* 										*/
+/*                                                                              */
 /* Redistributions of source code must retain the above copyright notice,	*/
 /* this list of conditions and the following disclaimer.			*/
-/* 										*/
+/*                                                                              */
 /* Redistributions in binary form must reproduce the above copyright		*/
 /* notice, this list of conditions and the following disclaimer in the		*/
 /* documentation and/or other materials provided with the distribution.		*/
-/* 										*/
+/*                                                                              */
 /* Neither the names of the IBM Corporation nor the names of its		*/
 /* contributors may be used to endorse or promote products derived from		*/
 /* this software without specific prior written permission.			*/
-/* 										*/
+/*                                                                              */
 /* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS		*/
 /* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT		*/
 /* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR	*/
@@ -40,12 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef TPM_POSIX
 #include <netinet/in.h>
-#endif
-#ifdef TPM_WINDOWS
-#include <winsock2.h>
-#endif
 #include <tpm.h>
 #include <tpmutil.h>
 #include <oiaposap.h>
@@ -54,109 +49,6 @@
 #include <tpm_constants.h>
 #include <tpm_structures.h>
 #include "tpmfunc.h"
-
-#include <assert.h>
-
-uint32_t TPM_ValidateSignature(uint16_t sigscheme,
-                               struct tpm_buffer *data,
-                               struct tpm_buffer *signature,
-                               gcry_sexp_t rsa)
-{
-	STACK_TPM_BUFFER(tsi_ser);
-	unsigned char sighash[TPM_HASH_SIZE];	/* hash of quote info structure */
-	uint32_t ret = 0;
-	// unsigned char padded[4096];
-	// unsigned char plainarray[4096];
-	// int plain, irc;
-
-	switch (sigscheme) {
-		case TPM_SS_RSASSAPKCS1v15_INFO:
-		case TPM_SS_RSASSAPKCS1v15_SHA1:
-			/* create the hash of the quoteinfo structure for signature verification */
-			TSS_sha1(data->buffer, data->used, sighash);
-			/*
-			 ** perform an RSA verification on the signature returned by Quote
-			 */
-            size_t error = 0;
-            gcry_sexp_t msg, sig;
-            gcry_mpi_t mpi;
-            gcry_sexp_build(&msg, &error, "(data(flags pkcs1)(hash sha1 %b))", signature->used, signature->buffer);
-            gcry_mpi_scan(&mpi, GCRYMPI_FMT_USG, sighash, sizeof(sighash), NULL);
-            gcry_sexp_build(&sig, &error, "(sig-val(rsa(s %M)))", mpi);
-            ret = gcry_pk_verify(sig, msg, rsa);
-			if (ret != 0) {
-				ret =  ERR_SIGNATURE;
-			} else {
-				ret = 0;
-			}
-		break;
-		case TPM_SS_RSASSAPKCS1v15_DER:
-			/* create the hash of the quoteinfo structure for signature verification */
-			TSS_sha1(data->buffer, data->used, sighash);
-
-            //
-            assert (1);
-			
-		break;
-		default:
-			ret = ERR_SIGNATURE;
-	}
-	return ret;
-}
-
-/* 
- * Validate the signature over a PCR composite structure.
- * Returns '0' on success, an error code otherwise.
- */
-uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
-                                           unsigned char *antiReplay,
-                                           pubkeydata *pk,
-                                           struct tpm_buffer *signature,
-                                           uint16_t sigscheme)
-{
-	uint32_t ret;
-	gcry_sexp_t rsa; /* RSA public key */
-	TPM_QUOTE_INFO tqi;
-	STACK_TPM_BUFFER (ser_tqi);
-	STACK_TPM_BUFFER(response);
-	STACK_TPM_BUFFER (ser_tpc);
-	/*
-	** Convert to an OpenSSL RSA public key
-	*/
-	rsa = TSS_convpubkey(pk);
-
-	ret = TPM_GetCapability(TPM_CAP_VERSION, NULL,
-	                        &response);
-	if (ret != 0) {
-		gcry_sexp_release(rsa);
-		return ret;
-	}
-
-	memcpy(&(tqi.version), response.buffer, response.used);
-	memcpy(&(tqi.fixed), "QUOT", 4);
-	memcpy(&(tqi.externalData), antiReplay, TPM_NONCE_SIZE);
-	ret = TPM_WritePCRComposite(&ser_tpc, tpc);
-	if ((ret & ERR_MASK)) {
-		gcry_sexp_release(rsa);
-		return ret;
-	}
-	/* create the hash of the PCR_composite data for the quoteinfo structure */
-	TSS_sha1(ser_tpc.buffer, ser_tpc.used, tqi.digestValue);
-
-	ret = TPM_WriteQuoteInfo(&ser_tqi, &tqi);
-	if ((ret & ERR_MASK)) {
-		gcry_sexp_release(rsa);
-		return ret;
-	}
-	
-	ret = TPM_ValidateSignature(sigscheme,
-	                            &ser_tqi,
-	                            signature,
-	                            rsa);
-	gcry_sexp_release(rsa);
-	return ret;
-}
-
 
 /****************************************************************************/
 /*                                                                          */
@@ -170,39 +62,39 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
 /* outDigest is pointing to a buffer the size of TPM_HASH_SIZE (-20) that   */
 /*           will contain the new value of the PCR register upon return     */
 /*           (may be NULL)                                                  */
+
 /****************************************************************************/
 uint32_t TPM_Extend(uint32_t pcrIndex,
-                    unsigned char * event,
-                    unsigned char * outDigest) {
-	uint32_t ret;
-	uint32_t ordinal_no = htonl(TPM_ORD_Extend);
-	uint32_t pcrIndex_no = htonl(pcrIndex);
-	STACK_TPM_BUFFER(tpmdata)
-	
-	ret = TSS_buildbuff("00 c1 T l l %",&tpmdata,
-	                             ordinal_no,
-	                               pcrIndex_no,
-	                                 TPM_HASH_SIZE, event);
-	if ((ret & ERR_MASK)) {
-		return ret;
-	}
-	
-	ret = TPM_Transmit(&tpmdata,"Extend");
-	
-	if (0 != ret) {
-		return ret;
-	}
-	
-	if (NULL != outDigest) {
-		memcpy(outDigest, 
-		       &tpmdata.buffer[TPM_DATA_OFFSET], 
-		       TPM_HASH_SIZE);
-	}
-	
-	return ret;
+                    unsigned char* event,
+                    unsigned char* outDigest) {
+        uint32_t ret;
+        uint32_t ordinal_no = htonl(TPM_ORD_Extend);
+        uint32_t pcrIndex_no = htonl(pcrIndex);
+
+        STACK_TPM_BUFFER(tpmdata)
+
+        ret = TSS_buildbuff("00 c1 T l l %",&tpmdata,
+                            ordinal_no,
+                            pcrIndex_no,
+                            TPM_HASH_SIZE, event);
+        if ((ret & ERR_MASK)) {
+                return ret;
+        }
+
+        ret = TPM_Transmit(&tpmdata,"Extend");
+
+        if (0 != ret) {
+                return ret;
+        }
+
+        if (NULL != outDigest) {
+                memcpy(outDigest,
+                       &tpmdata.buffer[TPM_DATA_OFFSET],
+                       TPM_HASH_SIZE);
+        }
+
+        return ret;
 }
-
-
 
 /****************************************************************************/
 /*                                                                          */
@@ -218,160 +110,163 @@ uint32_t TPM_Extend(uint32_t pcrIndex,
 /* tpc       is a pointer to an area to receive a pcrcomposite structure    */
 /* signature is a pointer to an area to receive the signature               */
 /*                                                                          */
+
 /****************************************************************************/
 uint32_t TPM_Quote(uint32_t keyhandle,
-                   unsigned char *keyauth,
-                   unsigned char *externalData,
-                   TPM_PCR_SELECTION *tps,
-                   TPM_PCR_COMPOSITE *tpc,
-                   struct tpm_buffer *signature)
+                   unsigned char* keyauth,
+                   unsigned char* externalData,
+                   TPM_PCR_SELECTION* tps,
+                   TPM_PCR_COMPOSITE* tpc,
+                   struct tpm_buffer* signature)
 {
-	uint32_t ret;
-	STACK_TPM_BUFFER( tpmdata )
-	session sess;
-	unsigned char pubauth[TPM_HASH_SIZE];
-	unsigned char nonceodd[TPM_NONCE_SIZE];
-	unsigned char c;
-	uint32_t ordinal = htonl(TPM_ORD_Quote);
-	uint32_t keyhndl = htonl(keyhandle);
-	uint16_t pcrselsize;
-	uint32_t valuesize;
-	uint32_t sigsize;
-	uint32_t offset;
-	STACK_TPM_BUFFER( serPcrSel );
+        uint32_t ret;
 
-	/* check input arguments */
-	if (tpc == NULL || externalData == NULL || signature == NULL) return ERR_NULL_ARG;
+        STACK_TPM_BUFFER( tpmdata )
+        session sess;
+        unsigned char pubauth[TPM_HASH_SIZE];
+        unsigned char nonceodd[TPM_NONCE_SIZE];
+        unsigned char c;
+        uint32_t ordinal = htonl(TPM_ORD_Quote);
+        uint32_t keyhndl = htonl(keyhandle);
+        uint16_t pcrselsize;
+        uint32_t valuesize;
+        uint32_t sigsize;
+        uint32_t offset;
 
-	ret = needKeysRoom(keyhandle, 0, 0, 0);
-	if (ret != 0) {
-		return ret;
-	}
+        STACK_TPM_BUFFER( serPcrSel );
 
-	ret = TPM_WritePCRSelection(&serPcrSel, tps);
+        /* check input arguments */
+        if (tpc == NULL || externalData == NULL || signature == NULL) return ERR_NULL_ARG;
 
-	if ((ret & ERR_MASK))
-		return ret;
+        ret = needKeysRoom(keyhandle, 0, 0, 0);
+        if (ret != 0) {
+                return ret;
+        }
 
-	if (keyauth != NULL)  /* authdata required */ {
-		/* Open OSAP Session */
-		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_DSAP,&sess,
-		                      keyauth,TPM_ET_KEYHANDLE,keyhandle);
-		if (ret != 0) return ret;
-		/* generate odd nonce */
-		TSS_gennonce(nonceodd);
-		/* move Network byte order data to variables for hmac calculation */
-		c = 0;
-		/* calculate authorization HMAC value */
-		ret = TSS_authhmac(pubauth,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
-		                   TPM_U32_SIZE,&ordinal,
-		                   TPM_HASH_SIZE,externalData,
-		                   serPcrSel.used,serPcrSel.buffer,
-		                   0,0);
-		if (ret != 0) {
-			TSS_SessionClose(&sess);
-			return ret;
-		}
-		/* build the request buffer */
-		ret = TSS_buildbuff("00 C2 T l l % % L % o %",&tpmdata,
-		                             ordinal,
-		                               keyhndl,
-		                                 TPM_HASH_SIZE,externalData,
-		                                   serPcrSel.used, serPcrSel.buffer,
-		                                     TSS_Session_GetHandle(&sess),
-		                                       TPM_NONCE_SIZE,nonceodd,
-		                                         c,
-		                                          TPM_HASH_SIZE,pubauth);
-		if ((ret & ERR_MASK) != 0) {
-			TSS_SessionClose(&sess);
-			return ret;
-		}
-		/* transmit the request buffer to the TPM device and read the reply */
-		ret = TPM_Transmit(&tpmdata,"Quote");
-		TSS_SessionClose(&sess);
-		if (ret != 0) {
-			return ret;
-		}
-		
-		offset = TPM_DATA_OFFSET;
-		/* calculate the size of the returned Blob */
-		ret  =  tpm_buffer_load16(&tpmdata,offset,&pcrselsize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U16_SIZE + pcrselsize;
-		
-		ret =  tpm_buffer_load32(&tpmdata,offset,&valuesize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U32_SIZE + valuesize;
-		ret =  tpm_buffer_load32(&tpmdata,offset, &sigsize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U32_SIZE;
+        ret = TPM_WritePCRSelection(&serPcrSel, tps);
 
-		/* check the HMAC in the response */
-		ret = TSS_checkhmac1(&tpmdata,ordinal,nonceodd,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,
-		                     offset-TPM_DATA_OFFSET+sigsize,TPM_DATA_OFFSET,
-		                     0,0);
-		if (ret != 0) {
-			return ret;
-		}
-		ret = TPM_ReadPCRComposite(&tpmdata,
-		                           TPM_DATA_OFFSET,
-		                           tpc);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		/* copy the returned blob to caller */
-		SET_TPM_BUFFER(signature,
-		               &tpmdata.buffer[offset],
-		               sigsize);
-	} else  /* no authdata required */ {
-		/* build the request buffer */
-		ret = TSS_buildbuff("00 C1 T l l % %",&tpmdata,
-		                             ordinal,
-		                               keyhndl,
-		                                 TPM_HASH_SIZE,externalData,
-		                                   serPcrSel.used,serPcrSel.buffer);
-		if ((ret & ERR_MASK) != 0) return ret;
-		/* transmit the request buffer to the TPM device and read the reply */
-		ret = TPM_Transmit(&tpmdata,"Quote");
-		if (ret != 0) return ret;
-		/* calculate the size of the returned Blob */
-		offset = TPM_DATA_OFFSET;
-		ret =  tpm_buffer_load16(&tpmdata,offset, &pcrselsize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U16_SIZE + pcrselsize;
-		ret  =  tpm_buffer_load32(&tpmdata,offset, &valuesize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U32_SIZE + valuesize;
+        if ((ret & ERR_MASK))
+                return ret;
 
-		ret =  tpm_buffer_load32(&tpmdata,offset, &sigsize);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		offset += TPM_U32_SIZE;
-		
-		/* copy the returned PCR composite to caller */
-		ret = TPM_ReadPCRComposite(&tpmdata,
-		                           TPM_DATA_OFFSET,
-		                           tpc);
-		if ((ret & ERR_MASK)) {
-			return ret;
-		}
-		/* copy the returned blob to caller */
-		SET_TPM_BUFFER(signature,
-		               &tpmdata.buffer[offset],
-		               sigsize);
-	}
-	return 0;
+        if (keyauth != NULL) /* authdata required */ {
+                /* Open OSAP Session */
+                ret = TSS_SessionOpen(SESSION_OSAP | SESSION_DSAP,&sess,
+                                      keyauth,TPM_ET_KEYHANDLE,keyhandle);
+                if (ret != 0) return ret;
+                /* generate odd nonce */
+                TSS_gennonce(nonceodd);
+                /* move Network byte order data to variables for hmac calculation */
+                c = 0;
+                /* calculate authorization HMAC value */
+                ret = TSS_authhmac(pubauth,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
+                                   TPM_U32_SIZE,&ordinal,
+                                   TPM_HASH_SIZE,externalData,
+                                   serPcrSel.used,serPcrSel.buffer,
+                                   0,0);
+                if (ret != 0) {
+                        TSS_SessionClose(&sess);
+                        return ret;
+                }
+                /* build the request buffer */
+                ret = TSS_buildbuff("00 C2 T l l % % L % o %",&tpmdata,
+                                    ordinal,
+                                    keyhndl,
+                                    TPM_HASH_SIZE,externalData,
+                                    serPcrSel.used, serPcrSel.buffer,
+                                    TSS_Session_GetHandle(&sess),
+                                    TPM_NONCE_SIZE,nonceodd,
+                                    c,
+                                    TPM_HASH_SIZE,pubauth);
+                if ((ret & ERR_MASK) != 0) {
+                        TSS_SessionClose(&sess);
+                        return ret;
+                }
+                /* transmit the request buffer to the TPM device and read the reply */
+                ret = TPM_Transmit(&tpmdata,"Quote");
+                TSS_SessionClose(&sess);
+                if (ret != 0) {
+                        return ret;
+                }
+
+                offset = TPM_DATA_OFFSET;
+                /* calculate the size of the returned Blob */
+                ret  =  tpm_buffer_load16(&tpmdata,offset,&pcrselsize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U16_SIZE + pcrselsize;
+
+                ret =  tpm_buffer_load32(&tpmdata,offset,&valuesize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U32_SIZE + valuesize;
+                ret =  tpm_buffer_load32(&tpmdata,offset, &sigsize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U32_SIZE;
+
+                /* check the HMAC in the response */
+                ret = TSS_checkhmac1(&tpmdata,ordinal,nonceodd,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,
+                                     offset - TPM_DATA_OFFSET + sigsize,TPM_DATA_OFFSET,
+                                     0,0);
+                if (ret != 0) {
+                        return ret;
+                }
+                ret = TPM_ReadPCRComposite(&tpmdata,
+                                           TPM_DATA_OFFSET,
+                                           tpc);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                /* copy the returned blob to caller */
+                SET_TPM_BUFFER(signature,
+                               &tpmdata.buffer[offset],
+                               sigsize);
+        } else /* no authdata required */ {
+                /* build the request buffer */
+                ret = TSS_buildbuff("00 C1 T l l % %",&tpmdata,
+                                    ordinal,
+                                    keyhndl,
+                                    TPM_HASH_SIZE,externalData,
+                                    serPcrSel.used,serPcrSel.buffer);
+                if ((ret & ERR_MASK) != 0) return ret;
+                /* transmit the request buffer to the TPM device and read the reply */
+                ret = TPM_Transmit(&tpmdata,"Quote");
+                if (ret != 0) return ret;
+                /* calculate the size of the returned Blob */
+                offset = TPM_DATA_OFFSET;
+                ret =  tpm_buffer_load16(&tpmdata,offset, &pcrselsize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U16_SIZE + pcrselsize;
+                ret  =  tpm_buffer_load32(&tpmdata,offset, &valuesize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U32_SIZE + valuesize;
+
+                ret =  tpm_buffer_load32(&tpmdata,offset, &sigsize);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                offset += TPM_U32_SIZE;
+
+                /* copy the returned PCR composite to caller */
+                ret = TPM_ReadPCRComposite(&tpmdata,
+                                           TPM_DATA_OFFSET,
+                                           tpc);
+                if ((ret & ERR_MASK)) {
+                        return ret;
+                }
+                /* copy the returned blob to caller */
+                SET_TPM_BUFFER(signature,
+                               &tpmdata.buffer[offset],
+                               sigsize);
+        }
+        return 0;
 }
 
 /****************************************************************************/
@@ -392,278 +287,282 @@ uint32_t TPM_Quote(uint32_t keyhandle,
 /* bloblen   is a pointer to an integer which will receive the length       */
 /*           of the signed data                                             */
 /*                                                                          */
+
 /****************************************************************************/
 uint32_t TPM_Quote2(uint32_t keyhandle,
-                    TPM_PCR_SELECTION * selection,
+                    TPM_PCR_SELECTION* selection,
                     TPM_BOOL addVersion,
-                    unsigned char *keyauth,
-                    unsigned char *antiReplay,
-                    TPM_PCR_INFO_SHORT * pcrinfo,
-                    struct tpm_buffer *versionblob,
-                    struct tpm_buffer *signature)
+                    unsigned char* keyauth,
+                    unsigned char* antiReplay,
+                    TPM_PCR_INFO_SHORT* pcrinfo,
+                    struct tpm_buffer* versionblob,
+                    struct tpm_buffer* signature)
 {
-	uint32_t ret;
-	uint32_t rc;
-	STACK_TPM_BUFFER( tpmdata )
-	session sess;
-	unsigned char pubauth[TPM_HASH_SIZE];
-	unsigned char nonceodd[TPM_NONCE_SIZE];
-	unsigned char c = 0;
-	uint32_t ordinal_no = htonl(TPM_ORD_Quote2);
-	uint16_t pcrselsize;
-	uint32_t verinfosize;
-	uint32_t sigsize;
-	uint32_t storedsize;
-	uint32_t keyhndl = htonl(keyhandle);
-	uint16_t keytype;
-	struct tpm_buffer * serPCRSelection;
-	uint32_t serPCRSelectionSize;
+        uint32_t ret;
+        uint32_t rc;
 
-	/* check input arguments */
-	if (pcrinfo   == NULL ||
-	    selection == NULL ||
-	    antiReplay == NULL) return ERR_NULL_ARG;
-	keytype = 0x0001;
+        STACK_TPM_BUFFER( tpmdata )
+        session sess;
+        unsigned char pubauth[TPM_HASH_SIZE];
+        unsigned char nonceodd[TPM_NONCE_SIZE];
+        unsigned char c = 0;
+        uint32_t ordinal_no = htonl(TPM_ORD_Quote2);
+        uint16_t pcrselsize;
+        uint32_t verinfosize;
+        uint32_t sigsize;
+        uint32_t storedsize;
+        uint32_t keyhndl = htonl(keyhandle);
+        uint16_t keytype;
+        struct tpm_buffer* serPCRSelection;
+        uint32_t serPCRSelectionSize;
 
-	ret = needKeysRoom(keyhandle, 0, 0, 0);
-	if (ret != 0) {
-		return ret;
-	}
+        /* check input arguments */
+        if (pcrinfo   == NULL ||
+            selection == NULL ||
+            antiReplay == NULL) return ERR_NULL_ARG;
+        keytype = 0x0001;
 
-	TSS_gennonce(antiReplay);
+        ret = needKeysRoom(keyhandle, 0, 0, 0);
+        if (ret != 0) {
+                return ret;
+        }
 
-	serPCRSelection = TSS_AllocTPMBuffer(TPM_U16_SIZE +
-	                                     selection->sizeOfSelect);
-	if (NULL == serPCRSelection) {
-		return ERR_MEM_ERR;
-	}
+        TSS_gennonce(antiReplay);
 
-	ret = TPM_WritePCRSelection(serPCRSelection, selection);
-	if (( ret & ERR_MASK) != 0) {
-		TSS_FreeTPMBuffer(serPCRSelection);
-		return ret;
-	}
-	serPCRSelectionSize = ret;
+        serPCRSelection = TSS_AllocTPMBuffer(TPM_U16_SIZE +
+                                             selection->sizeOfSelect);
+        if (NULL == serPCRSelection) {
+                return ERR_MEM_ERR;
+        }
 
-	if (keyauth != NULL) {
-		/* Open OSAP Session */
-		ret = TSS_SessionOpen(SESSION_OSAP|SESSION_DSAP,&sess,keyauth,keytype,keyhandle);
-		if (ret != 0)  {
-			TSS_FreeTPMBuffer(serPCRSelection);
-			return ret;
-		}
-		/* generate odd nonce */
-		TSS_gennonce(nonceodd);
-		/* move Network byte order data to variables for hmac calculation */
+        ret = TPM_WritePCRSelection(serPCRSelection, selection);
+        if ((ret & ERR_MASK) != 0) {
+                TSS_FreeTPMBuffer(serPCRSelection);
+                return ret;
+        }
+        serPCRSelectionSize = ret;
 
-		/* calculate authorization HMAC value */
-		ret = TSS_authhmac(pubauth,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
-		                   TPM_U32_SIZE,&ordinal_no,
-		                   TPM_HASH_SIZE,antiReplay,
-		                   serPCRSelectionSize, serPCRSelection->buffer,
-		                   sizeof(TPM_BOOL), &addVersion,
-		                   0,0);
-		if (ret != 0) {
-			TSS_FreeTPMBuffer(serPCRSelection);
-			TSS_SessionClose(&sess);
-			return ret;
-		}
-		/* build the request buffer */
-		ret = TSS_buildbuff("00 C2 T l l % % o L % o %",&tpmdata,
-		                             ordinal_no,
-		                               keyhndl,
-		                                 TPM_HASH_SIZE,antiReplay,
-		                                   serPCRSelectionSize,serPCRSelection->buffer,
-		                                     addVersion,
-		                                       TSS_Session_GetHandle(&sess),
-		                                         TPM_NONCE_SIZE,nonceodd,
-		                                           c,
-		                                             TPM_HASH_SIZE,pubauth);
-		TSS_FreeTPMBuffer(serPCRSelection);
-		if ((ret & ERR_MASK) != 0) {
-			TSS_SessionClose(&sess);
-			return ret;
-		}
-		/* transmit the request buffer to the TPM device and read the reply */
-		ret = TPM_Transmit(&tpmdata,"Quote2 - AUTH1");
-		TSS_SessionClose(&sess);
-		if (ret != 0) {
-			return ret;
-		}
-	} else {
-		/* build the request buffer */
-		ret = TSS_buildbuff("00 C1 T l l % % o",&tpmdata,
-		                             ordinal_no,
-		                               keyhndl,
-		                                 TPM_HASH_SIZE,antiReplay,
-		                                   serPCRSelectionSize,serPCRSelection->buffer,
-		                                     addVersion);
-		TSS_FreeTPMBuffer(serPCRSelection);
-		if ((ret & ERR_MASK) != 0) {
-			TSS_SessionClose(&sess);
-			return ret;
-		}
+        if (keyauth != NULL) {
+                /* Open OSAP Session */
+                ret = TSS_SessionOpen(SESSION_OSAP | SESSION_DSAP,&sess,keyauth,keytype,keyhandle);
+                if (ret != 0)  {
+                        TSS_FreeTPMBuffer(serPCRSelection);
+                        return ret;
+                }
+                /* generate odd nonce */
+                TSS_gennonce(nonceodd);
+                /* move Network byte order data to variables for hmac calculation */
 
-		/* transmit the request buffer to the TPM device and read the reply */
-		ret = TPM_Transmit(&tpmdata,"Quote2");
-		TSS_SessionClose(&sess);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-	/* calculate the size of the returned Blob */
+                /* calculate authorization HMAC value */
+                ret = TSS_authhmac(pubauth,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
+                                   TPM_U32_SIZE,&ordinal_no,
+                                   TPM_HASH_SIZE,antiReplay,
+                                   serPCRSelectionSize, serPCRSelection->buffer,
+                                   sizeof(TPM_BOOL), &addVersion,
+                                   0,0);
+                if (ret != 0) {
+                        TSS_FreeTPMBuffer(serPCRSelection);
+                        TSS_SessionClose(&sess);
+                        return ret;
+                }
+                /* build the request buffer */
+                ret = TSS_buildbuff("00 C2 T l l % % o L % o %",&tpmdata,
+                                    ordinal_no,
+                                    keyhndl,
+                                    TPM_HASH_SIZE,antiReplay,
+                                    serPCRSelectionSize,serPCRSelection->buffer,
+                                    addVersion,
+                                    TSS_Session_GetHandle(&sess),
+                                    TPM_NONCE_SIZE,nonceodd,
+                                    c,
+                                    TPM_HASH_SIZE,pubauth);
+                TSS_FreeTPMBuffer(serPCRSelection);
+                if ((ret & ERR_MASK) != 0) {
+                        TSS_SessionClose(&sess);
+                        return ret;
+                }
+                /* transmit the request buffer to the TPM device and read the reply */
+                ret = TPM_Transmit(&tpmdata,"Quote2 - AUTH1");
+                TSS_SessionClose(&sess);
+                if (ret != 0) {
+                        return ret;
+                }
+        } else {
+                /* build the request buffer */
+                ret = TSS_buildbuff("00 C1 T l l % % o",&tpmdata,
+                                    ordinal_no,
+                                    keyhndl,
+                                    TPM_HASH_SIZE,antiReplay,
+                                    serPCRSelectionSize,serPCRSelection->buffer,
+                                    addVersion);
+                TSS_FreeTPMBuffer(serPCRSelection);
+                if ((ret & ERR_MASK) != 0) {
+                        TSS_SessionClose(&sess);
+                        return ret;
+                }
+
+                /* transmit the request buffer to the TPM device and read the reply */
+                ret = TPM_Transmit(&tpmdata,"Quote2");
+                TSS_SessionClose(&sess);
+                if (ret != 0) {
+                        return ret;
+                }
+        }
+        /* calculate the size of the returned Blob */
         ret =  tpm_buffer_load16(&tpmdata,TPM_DATA_OFFSET, &pcrselsize);
         if ((ret & ERR_MASK)) {
-        	return ret;
+                return ret;
         }
         pcrselsize += TPM_U16_SIZE + 1 + TPM_HASH_SIZE;
-	ret =  tpm_buffer_load32(&tpmdata, TPM_DATA_OFFSET + pcrselsize, &verinfosize);
-	if ((ret & ERR_MASK)) {
-		return ret;
-	}
-	ret  =  tpm_buffer_load32(&tpmdata, TPM_DATA_OFFSET + pcrselsize + TPM_U32_SIZE + verinfosize, &sigsize);
-	if ((ret & ERR_MASK)) {
-		return ret;
-	}
-	
-	storedsize   = pcrselsize + TPM_U32_SIZE + verinfosize +
-	                            TPM_U32_SIZE + sigsize;
+        ret =  tpm_buffer_load32(&tpmdata, TPM_DATA_OFFSET + pcrselsize, &verinfosize);
+        if ((ret & ERR_MASK)) {
+                return ret;
+        }
+        ret  =  tpm_buffer_load32(&tpmdata, TPM_DATA_OFFSET + pcrselsize + TPM_U32_SIZE + verinfosize, &sigsize);
+        if ((ret & ERR_MASK)) {
+                return ret;
+        }
 
-	if (keyauth != NULL) {
-		/* check the HMAC in the response */
-		ret = TSS_checkhmac1(&tpmdata,ordinal_no,nonceodd,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,
-		                     storedsize,TPM_DATA_OFFSET,
-		                     0,0);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-	/* copy the returned PCR composite to caller */
-	
-	if (pcrselsize != (rc = 
-	     TPM_ReadPCRInfoShort(&tpmdata, TPM_DATA_OFFSET,
-	                          pcrinfo))) {
-		if ((rc & ERR_MASK)) 
-			return rc;
-		return ERR_BUFFER;
-	}
-	
-	if (NULL != versionblob) {
-		SET_TPM_BUFFER(
-		       versionblob,
-		       &tpmdata.buffer[TPM_DATA_OFFSET+pcrselsize+TPM_U32_SIZE],
-		       verinfosize);
-	}
-	
-	if (NULL != signature) {
-		SET_TPM_BUFFER(signature,
-		       &tpmdata.buffer[TPM_DATA_OFFSET+pcrselsize+TPM_U32_SIZE+verinfosize+TPM_U32_SIZE],
-		       sigsize);
-	}
+        storedsize   = pcrselsize + TPM_U32_SIZE + verinfosize +
+                       TPM_U32_SIZE + sigsize;
 
-	return ret;
+        if (keyauth != NULL) {
+                /* check the HMAC in the response */
+                ret = TSS_checkhmac1(&tpmdata,ordinal_no,nonceodd,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,
+                                     storedsize,TPM_DATA_OFFSET,
+                                     0,0);
+                if (ret != 0) {
+                        return ret;
+                }
+        }
+        /* copy the returned PCR composite to caller */
+
+        if (pcrselsize != (rc =
+                                   TPM_ReadPCRInfoShort(&tpmdata, TPM_DATA_OFFSET,
+                                                        pcrinfo))) {
+                if ((rc & ERR_MASK))
+                        return rc;
+                return ERR_BUFFER;
+        }
+
+        if (NULL != versionblob) {
+                SET_TPM_BUFFER(
+                        versionblob,
+                        &tpmdata.buffer[TPM_DATA_OFFSET + pcrselsize + TPM_U32_SIZE],
+                        verinfosize);
+        }
+
+        if (NULL != signature) {
+                SET_TPM_BUFFER(signature,
+                               &tpmdata.buffer[TPM_DATA_OFFSET + pcrselsize + TPM_U32_SIZE + verinfosize + TPM_U32_SIZE],
+                               sigsize);
+        }
+
+        return ret;
 }
-             
 
 /****************************************************************************/
 /*                                                                          */
 /*  Read PCR value                                                          */
 /*                                                                          */
+
 /****************************************************************************/
-uint32_t TPM_PcrRead(uint32_t pcrindex, unsigned char *pcrvalue)
-   {
-   uint32_t ret;
-   STACK_TPM_BUFFER(tpmdata)
-   
-   if (pcrvalue == NULL) return ERR_NULL_ARG;
-   ret = TSS_buildbuff("00 c1 T 00 00 00 15 L",&tpmdata,pcrindex);
-   if ((ret & ERR_MASK) != 0 ) return ret;
-   ret = TPM_Transmit(&tpmdata,"PCRRead");
-   if (ret != 0) return ret;
-   memcpy(pcrvalue,
-          &tpmdata.buffer[TPM_DATA_OFFSET],
-          TPM_HASH_SIZE);
-   return 0;
-   }
+uint32_t TPM_PcrRead(uint32_t pcrindex, unsigned char* pcrvalue)
+{
+        uint32_t ret;
+
+        STACK_TPM_BUFFER(tpmdata)
+
+        if (pcrvalue == NULL) return ERR_NULL_ARG;
+        ret = TSS_buildbuff("00 c1 T 00 00 00 15 L",&tpmdata,pcrindex);
+        if ((ret & ERR_MASK) != 0) return ret;
+        ret = TPM_Transmit(&tpmdata,"PCRRead");
+        if (ret != 0) return ret;
+        memcpy(pcrvalue,
+               &tpmdata.buffer[TPM_DATA_OFFSET],
+               TPM_HASH_SIZE);
+        return 0;
+}
 
 /****************************************************************************/
 /*                                                                          */
 /*  Create PCR_INFO structure using current PCR values                      */
 /*                                                                          */
-/****************************************************************************/
-uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char *pcrinfo, uint32_t *len)
-   {
-   struct pcrinfo
-      {
-      uint16_t selsize;
-      unsigned char select[TPM_PCR_MASK_SIZE];
-      unsigned char relhash[TPM_HASH_SIZE];
-      unsigned char crthash[TPM_HASH_SIZE];
-      } myinfo;
-   uint32_t i;
-   int j;
-   uint32_t work;
-   unsigned char *valarray;
-   uint32_t numregs;
-   uint32_t ret;
-   uint32_t valsize;
-   gcry_md_hd_t sha;
-   
-   
-   /* check arguments */
-   if (pcrinfo == NULL || len == NULL) return ERR_NULL_ARG;
-   /* build pcr selection array */
-   work = pcrmap;
-   memset(myinfo.select,0,TPM_PCR_MASK_SIZE);
-   for (i = 0; i < TPM_PCR_MASK_SIZE; ++i)
-      {
-      myinfo.select[i] = work & 0x000000FF;
-      work = work >> 8;
-      }
-   /* calculate number of PCR registers requested */
-   numregs = 0;
-   work = pcrmap;
-   for (i = 0; i < (TPM_PCR_MASK_SIZE * 8); ++i)
-      {
-      if (work & 1) ++numregs;
-      work = work >> 1;
-      }
-   if (numregs == 0)
-      {
-      *len = 0;
-      return 0;
-      }
-   /* create the array of PCR values */
-   valarray = (unsigned char *)malloc(TPM_HASH_SIZE * numregs);
-   /* read the PCR values into the value array */
-   work = pcrmap;
-   j = 0;
-   for (i = 0; i < (TPM_PCR_MASK_SIZE * 8); ++i, work = work >> 1)
-      {
-      if ((work & 1) == 0) continue;
-      ret = TPM_PcrRead(i,&(valarray[(j*TPM_HASH_SIZE)]));
-      if (ret) return ret;
-      ++j;
-      }
-   myinfo.selsize = ntohs(TPM_PCR_MASK_SIZE);
-   valsize = ntohl(numregs * TPM_HASH_SIZE);
-   /* calculate composite hash */
-   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
-   gcry_md_write(sha,&myinfo.selsize,TPM_U16_SIZE);
-   gcry_md_write(sha,&myinfo.select,TPM_PCR_MASK_SIZE);
-   gcry_md_write(sha,&valsize,TPM_U32_SIZE);
-   for (i = 0;i < numregs;++i)
-      {
-      gcry_md_write(sha,&(valarray[(i*TPM_HASH_SIZE)]),TPM_HASH_SIZE);
-      }
-   gcry_md_extract(sha, 0, myinfo.relhash, TPM_HASH_SIZE);
-   gcry_md_close(sha);
-   memcpy(myinfo.crthash,myinfo.relhash,TPM_HASH_SIZE);
-   memcpy(pcrinfo,&myinfo,sizeof (struct pcrinfo));
-   *len = sizeof (struct pcrinfo);
-   return 0;
-   }
 
+/****************************************************************************/
+uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char* pcrinfo, uint32_t* len)
+{
+        struct pcrinfo
+        {
+                uint16_t selsize;
+                unsigned char select[TPM_PCR_MASK_SIZE];
+                unsigned char relhash[TPM_HASH_SIZE];
+                unsigned char crthash[TPM_HASH_SIZE];
+        } myinfo;
+        uint32_t i;
+        int j;
+        uint32_t work;
+        unsigned char* valarray;
+        uint32_t numregs;
+        uint32_t ret;
+        uint32_t valsize;
+        gcry_md_hd_t sha;
+
+        /* check arguments */
+        if (pcrinfo == NULL || len == NULL) return ERR_NULL_ARG;
+        /* build pcr selection array */
+        work = pcrmap;
+        memset(myinfo.select,0,TPM_PCR_MASK_SIZE);
+        for (i = 0; i < TPM_PCR_MASK_SIZE; ++i)
+        {
+                myinfo.select[i] = work & 0x000000FF;
+                work = work >> 8;
+        }
+        /* calculate number of PCR registers requested */
+        numregs = 0;
+        work = pcrmap;
+        for (i = 0; i < (TPM_PCR_MASK_SIZE * 8); ++i)
+        {
+                if (work & 1) ++numregs;
+                work = work >> 1;
+        }
+        if (numregs == 0)
+        {
+                *len = 0;
+                return 0;
+        }
+        /* create the array of PCR values */
+        valarray = (unsigned char*)malloc(TPM_HASH_SIZE * numregs);
+        /* read the PCR values into the value array */
+        work = pcrmap;
+        j = 0;
+        for (i = 0; i < (TPM_PCR_MASK_SIZE * 8); ++i, work = work >> 1)
+        {
+                if ((work & 1) == 0) continue;
+                ret = TPM_PcrRead(i,&(valarray[(j * TPM_HASH_SIZE)]));
+                if (ret) return ret;
+                ++j;
+        }
+        myinfo.selsize = ntohs(TPM_PCR_MASK_SIZE);
+        valsize = ntohl(numregs * TPM_HASH_SIZE);
+        /* calculate composite hash */
+        gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+        gcry_md_write(sha,&myinfo.selsize,TPM_U16_SIZE);
+        gcry_md_write(sha,&myinfo.select,TPM_PCR_MASK_SIZE);
+        gcry_md_write(sha,&valsize,TPM_U32_SIZE);
+        for (i = 0; i < numregs; ++i)
+        {
+                gcry_md_write(sha,&(valarray[(i * TPM_HASH_SIZE)]),TPM_HASH_SIZE);
+        }
+        const unsigned char* digest = gcry_md_read(sha, 0);
+
+        memcpy(myinfo.relhash, digest, TPM_HASH_SIZE);
+        gcry_md_close(sha);
+        memcpy(myinfo.crthash,myinfo.relhash,TPM_HASH_SIZE);
+        memcpy(pcrinfo,&myinfo,sizeof (struct pcrinfo));
+        *len = sizeof (struct pcrinfo);
+        return 0;
+}
 
 /****************************************************************************/
 /*                                                                          */
@@ -673,36 +572,37 @@ uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char *pcrinfo, uint32_t *len)
 /*                                                                          */
 /* pcrmap : The selection of PCRs to reset as 32 bit bitmap                 */
 /*                                                                          */
+
 /****************************************************************************/
-uint32_t TPM_PCRReset(TPM_PCR_SELECTION * selection)
+uint32_t TPM_PCRReset(TPM_PCR_SELECTION* selection)
 {
-	uint32_t ret;
-	uint32_t ordinal_no = htonl(TPM_ORD_PCR_Reset);
-	STACK_TPM_BUFFER(tpmdata)
-	struct tpm_buffer *serPCRMap = TSS_AllocTPMBuffer(TPM_U16_SIZE + selection->sizeOfSelect + 10);
-	uint32_t serPCRMapSize;
+        uint32_t ret;
+        uint32_t ordinal_no = htonl(TPM_ORD_PCR_Reset);
 
-	if (NULL == serPCRMap) {
-		return ERR_MEM_ERR;
-	}
+        STACK_TPM_BUFFER(tpmdata)
+        struct tpm_buffer* serPCRMap = TSS_AllocTPMBuffer(TPM_U16_SIZE + selection->sizeOfSelect + 10);
+        uint32_t serPCRMapSize;
 
-	ret = TPM_WritePCRSelection(serPCRMap, selection);
-	if ((ret & ERR_MASK) != 0) {
-		TSS_FreeTPMBuffer(serPCRMap);
-		return ret;
-	}
-	serPCRMapSize = ret;
+        if (NULL == serPCRMap) {
+                return ERR_MEM_ERR;
+        }
 
-	ret = TSS_buildbuff("00 c1 T l %",&tpmdata,
-                                     ordinal_no,
-                                       serPCRMapSize, serPCRMap->buffer);
+        ret = TPM_WritePCRSelection(serPCRMap, selection);
+        if ((ret & ERR_MASK) != 0) {
+                TSS_FreeTPMBuffer(serPCRMap);
+                return ret;
+        }
+        serPCRMapSize = ret;
 
-	TSS_FreeTPMBuffer(serPCRMap);
-	if ((ret & ERR_MASK)) {
-		return ret;
-	}
-	ret = TPM_Transmit(&tpmdata,"PCR Reset");
+        ret = TSS_buildbuff("00 c1 T l %",&tpmdata,
+                            ordinal_no,
+                            serPCRMapSize, serPCRMap->buffer);
 
-	return ret;
+        TSS_FreeTPMBuffer(serPCRMap);
+        if ((ret & ERR_MASK)) {
+                return ret;
+        }
+        ret = TPM_Transmit(&tpmdata,"PCR Reset");
+
+        return ret;
 }
-
