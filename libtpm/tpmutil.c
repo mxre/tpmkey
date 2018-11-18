@@ -75,6 +75,7 @@ static void TPM_XOR(unsigned char *out,
 	            const unsigned char *in2,
 	            size_t length);
 #endif
+
 static TPM_RESULT TPMC_SHA1_valist(TPM_DIGEST md,
                                    uint32_t length0, unsigned char *buffer0,
                                    va_list ap);
@@ -857,6 +858,7 @@ static uint32_t createTransport(session *transSession, uint32_t *in_tp)
 	char *tpm_transport_pass= getenv("TPM_TRANSPORT_PASS");
 	char *tpm_transport_handle = getenv("TPM_TRANSPORT_HANDLE");
 	*in_tp = 0;
+#if 0
 	if (tpm_transport     &&
 	    0 == strcmp("1",tpm_transport) &&
 	    tpm_transport_ek  &&
@@ -937,6 +939,7 @@ static uint32_t createTransport(session *transSession, uint32_t *in_tp)
 		ret = 0;
 		*in_tp = 1;
 	} else
+#endif
 	if (tpm_transport     &&
 	    0 == strcmp("2",tpm_transport) &&
 	    tpm_transport_pass &&
@@ -1054,6 +1057,7 @@ static uint32_t destroyTransport(session *transSession)
 	return ret;
 }
 
+
 extern uint32_t (*g_transportFunction[])(struct tpm_buffer *tb,
 					 const char *msg);
 extern uint32_t g_num_transports;
@@ -1121,7 +1125,7 @@ static uint32_t TPM_Transmit_Internal(struct tpm_buffer *tb,const char *msg,
 	uint32_t ordinal = 0;
 	unsigned int tagoffset = 0;
 	unsigned char *buff = tb->buffer;
-	uint32_t resp_result = 0;
+	// uint32_t resp_result = 0;
 	struct tpm_buffer *orig_request;
 	/*
 	 * NEVER prepend anything when using a chardev since I could be
@@ -1208,8 +1212,8 @@ static uint32_t TPM_Transmit_Internal(struct tpm_buffer *tb,const char *msg,
 	    memmove(&buff[0], &buff[4], tb->used);
 	}
 
-#if 0
-	_TPM_AuditOutputstream(tb, ordinal, 0);
+#if 1
+	//_TPM_AuditOutputstream(tb, ordinal, 0);
 #else
         tpm_buffer_load32(tb, 6, &resp_result);
         if (resp_result == 0 ) {
@@ -1260,7 +1264,7 @@ void TSS_sha1(void *input, unsigned int len, unsigned char *output)
     gcry_md_extract(sha,0,output,20);
 	gcry_md_close(sha);
 }
-
+#if 0
 /****************************************************************************/
 /*									  */
 /* Perform a SHA1 hash on a file					    */
@@ -1291,7 +1295,7 @@ uint32_t TSS_SHAFile(const char *filename, unsigned char *buffer)
 	}
 	return ret;
 }
-
+#endif
 /****************************************************************************/
 /*									  */
 /* set logging flag							 */
@@ -1450,11 +1454,10 @@ TPM_RESULT TPM_AES_ctr128_Encrypt(unsigned char *data_out,
     return rc;
 }
 
+#if 0
 /* TPM_XOR XOR's 'in1' and 'in2' of 'length', putting the result in 'out'
 
  */
-
-#if 0
 static void TPM_XOR(unsigned char *out,
 		    const unsigned char *in1,
 		    const unsigned char *in2,
@@ -1468,6 +1471,7 @@ static void TPM_XOR(unsigned char *out,
     return;
 }
 #endif
+
 /* TSS_MGF1() generates an MGF1 'array' of length 'arrayLen' from 'seed' of length 'seedlen'
 
    The openSSL DLL doesn't export MGF1 in Windows or Linux 1.0.0, so this version is created from

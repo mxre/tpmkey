@@ -57,7 +57,7 @@
 #include <newserialize.h>
 
 #include <gcrypt.h>
-
+#if 0
 /****************************************************************************/
 /*                                                                          */
 /* Creates an endorsement key pair                                          */
@@ -1062,7 +1062,7 @@ uint32_t TPM_GetPubKey(uint32_t keyhandle,
 
     return TPM_GetPubKey_Internal(keyhandle, keyauth, pk);
 }
-
+#endif
 /****************************************************************************/
 /*                                                                          */
 /* Evict (delete) a  Key from the TPM                                       */
@@ -1120,7 +1120,7 @@ uint32_t TPM_EvictKey_UseRoom(uint32_t keyhandle)
         return ret;
 }
 
-
+#if 0
 uint32_t TPM_EvictKey(uint32_t keyhandle)
 {
         uint32_t ret;
@@ -1810,3 +1810,4 @@ uint32_t TPM_GetPubKeyDigest(uint32_t keyhandle, unsigned char *keyPassHash,
 	}
 	return 0;
 }
+#endif

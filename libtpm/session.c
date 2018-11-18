@@ -53,7 +53,7 @@
 #include <hmac.h>
 #include <tpm_types.h>
 #include <tpm_constants.h>
-
+#if 0
 uint32_t TPM_KeyControlOwner(
                              unsigned char *ownerauth,  // HMAC key
                              uint32_t keyhandle,
@@ -138,7 +138,7 @@ uint32_t TPM_KeyControlOwner(
 	
 	return ret;
 }
-
+#endif
 static uint32_t TPM_SaveContext_Internal(uint32_t handle,
                                          uint32_t resourceType,
                                          char * label,

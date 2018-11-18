@@ -55,7 +55,7 @@
 #include <pcrs.h>
 
 #define MAXPCRINFOLEN ( (TPM_HASH_SIZE * 2) + TPM_U16_SIZE + TPM_PCR_MASK_SIZE )
-   
+#if 0
 /****************************************************************************/
 /*                                                                          */
 /* Seal a data object with caller Specified PCR info                        */
@@ -253,7 +253,7 @@ uint32_t TPM_SealCurrPCR(uint32_t keyhandle, uint32_t pcrmap,
 	                data,datalen,
 	                blob,bloblen);
 }
-   
+#endif
 /****************************************************************************/
 /*                                                                          */
 /* Unseal a data object                                                     */
@@ -438,7 +438,7 @@ uint32_t TPM_Unseal(uint32_t keyhandle,
 	       *datalen);
 	return ret;
 }
-
+#if 0
 static uint32_t MGF1_encrypt(unsigned char *data, uint32_t datalen,
                              session *sess,
                              unsigned char *nonceodd,
@@ -936,3 +936,4 @@ uint32_t TPM_Unsealx(uint32_t keyhandle,
  
 	return ret;
 }
+#endif

@@ -69,7 +69,7 @@ void TPM_DetermineSessionEncryption(const session *sess, int *use_xor)
 		*use_xor = 0;
 	}
 }
-
+#if 0
 void TPM_CreateEncAuth(const session *sess, const unsigned char *in, unsigned char *out,
                        const unsigned char *nonceodd)
 {
@@ -119,7 +119,7 @@ void TPM_CreateEncAuth(const session *sess, const unsigned char *in, unsigned ch
 			out[i] = xorhash[i] ^ in[i];
 	}
 }
-
+#endif
 /****************************************************************************/
 /*                                                                          */
 /* Open an OIAP session                                                     */

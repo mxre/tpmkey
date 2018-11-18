@@ -61,7 +61,7 @@ uint32_t g_num_transports;
 uint32_t (*g_transportFunction[TPM_MAX_TRANSPORTS])(struct tpm_buffer *tb, const char *msg);
 
 static session *g_transSession[TPM_MAX_TRANSPORTS];
-
+#if 0
 /****************************************************************************/
 /*                                                                          */
 /* Functions for handling the trans digest                                  */
@@ -132,7 +132,7 @@ uint32_t _calc_transdigest(TPM_COMMAND_CODE ordinal,
                 
         return ret;
 }
-
+#endif
 /**
  *  Get the appropriate filename for the transDigest to write out to
  *  for the TPM_INSTANCE that the library is currently using.
@@ -177,7 +177,7 @@ uint32_t _read_transdigest(uint32_t handle, unsigned char *digest) {
 	return ret;
 }
 
-
+#if 0
 /*
  * Write the transdigest for the TPM_INSTANCE that the library
  * is currently using into a file.
@@ -204,7 +204,7 @@ uint32_t _store_transdigest(uint32_t handle, unsigned char *digest) {
 	return ret;
 }
 
-
+#endif
 /*
  * Extend the transdigest by reading its current value from the
  * file for the TPM_INSTANCE that the library is currently using
@@ -249,7 +249,7 @@ uint32_t _extend_transdigest(uint32_t handle, struct tpm_buffer *data) {
 	}
 	return ret;
 }
-
+#if 0
 
 /**
  *  Calculate the transdigest for the EstablishTransport function
@@ -296,7 +296,7 @@ uint32_t _calc_logout_esttrans(uint32_t returncode,
 	return ret;
 }
 
-
+#endif
 /*
  * Calculate the TPM_TRANSPORT_LOG_IN function that is calculated
  * as part of the TPM_ExecuteTransport ordinal. Extend the TPM_INSTANCE's
@@ -434,7 +434,7 @@ char *_get_currentticks_filename(uint32_t handle)
 	return filename;
 }
 
-
+#if 0
 /*
  * Save the current ticks into the TPM_INSTANCE's given transport
  * session's file
@@ -471,7 +471,7 @@ uint32_t _save_currentticks(uint32_t handle, TPM_CURRENT_TICKS *tct)
 
 	return ret;
 }
-
+#endif
 
 /*
  * Read the current ticks from the TPM_INSTANCE's given transport
@@ -797,7 +797,7 @@ int allowsTransport(uint32_t ord)
 #endif
 	return 0;
 }
-
+#if 0
 uint32_t getNumHandles(uint32_t ord)
 {
 	if (ord <= TPM_ORD_TickStampBlob)
@@ -1049,7 +1049,7 @@ uint32_t TPM_EstablishTransport_UseRoom(uint32_t keyhandle,
 
 
 
-
+#endif
 void _TPM_getTransportAlgIdEncScheme(TPM_ALGORITHM_ID *algId,
                                      TPM_ENC_SCHEME *encScheme)
 {
@@ -1529,7 +1529,7 @@ uint32_t _TPM_ExecuteTransport(struct tpm_buffer *tb,
 		goto exit;
 	}
 
-	_TPM_AuditInputstream(tb,1);
+	//_TPM_AuditInputstream(tb,1);
 	_calc_login_exec(H1, TSS_Session_GetHandle(transSess));
 
 	/* move Network byte order data to variable for hmac calculation */
@@ -1599,7 +1599,7 @@ uint32_t _TPM_ExecuteTransport(struct tpm_buffer *tb,
 	                         wrappedOrd,
 	                         &tpmdata->buffer[tpmdata->used]);
 	
-	_TPM_AuditOutputstream(res, in_ordinal, 1);
+	//_TPM_AuditOutputstream(res, in_ordinal, 1);
 
 	
 	ret = TSS_checkhmac1New(tpmdata,ordinal_no,transSess, nonceodd,TSS_Session_GetAuth(transSess),TPM_HASH_SIZE,
@@ -1788,8 +1788,7 @@ uint32_t TPM_ReleaseTransportSigned(uint32_t keyhandle,
 	                     TSS_Session_GetHandle(transSess));
 
 	if (transDigest != NULL) {
-		_read_transdigest(TSS_Session_GetHandle(transSess),
-		                  transDigest);
+		_read_transdigest(TSS_Session_GetHandle(transSess), transDigest);
 	}
 	//print_array("transDigest: ",transDigest, 20);
 	//char buffer[20];

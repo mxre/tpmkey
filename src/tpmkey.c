@@ -18,7 +18,7 @@
 #include <gcrypt.h>
 #include <tpmfunc.h>
 
-//#define TEST1 0
+#define TEST1 0
 
 // EFI GUID type
 typedef struct {          

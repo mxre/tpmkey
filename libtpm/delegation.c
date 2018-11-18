@@ -58,7 +58,7 @@
 #include <tpm_types.h>
 #include <tpm_constants.h>
 #include <tpm_error.h>
-
+#if 0
 uint32_t TPM_Delegate_Manage(uint32_t familyID,
                     uint32_t opFlag,
                     unsigned char * opData, uint32_t opDataLen,
@@ -615,7 +615,7 @@ uint32_t TPM_Delegate_VerifyDelegation(unsigned char * delegation, uint32_t dele
 
 	return ret;
 }
-
+#endif
 
 
 struct delegation_blob
@@ -773,7 +773,7 @@ uint32_t TPM_GetDelegationBlob(uint32_t etype,
 	}
 	return ERR_NOT_FOUND;
 }
-
+#if 0
 uint32_t TPM_AddDelegationBlob(uint32_t etype,
                                uint32_t keyhandle,
                                unsigned char *oldPassHash,
@@ -837,3 +837,4 @@ uint32_t TPM_ResetDelegation(void)
 	free(filename);
 	return ret;
 }
+#endif

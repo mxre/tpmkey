@@ -6,14 +6,17 @@ SOURCES = \
 	src/tpmkey.c
 
 LIBTPM = \
-	libtpm/auditing.c libtpm/bind.c libtpm/context.c \
-	libtpm/counter.c  libtpm/delegation.c libtpm/dir.c \
-	libtpm/eviction.c libtpm/hmac.c libtpm/identity.c libtpm/keys.c libtpm/keyswap.c \
-	libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
-	libtpm/oiaposap.c libtpm/optin.c libtpm/pcrs.c \
-	libtpm/raw.c libtpm/rng.c libtpm/seal.c libtpm/serialize.c libtpm/session.c \
-	libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
-	libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_dev.c libtpm/transport.c
+    libtpm/delegation.c libtpm/eviction.c libtpm/hmac.c libtpm/keys.c libtpm/keyswap.c libtpm/oiaposap.c libtpm/rng.c \
+	libtpm/serialize.c libtpm/session.c libtpm/seal.c libtpm/miscfunc.c libtpm/transport.c libtpm/tpmutil.c libtpm/tpmutil_dev.c
+	#libtpm/auditing.c libtpm/bind.c libtpm/context.c \
+	#libtpm/counter.c   libtpm/dir.c \
+	#
+	#libtpm/identity.c libtpm/keys.c libtpm/keyswap.c \
+	#libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
+	# libtpm/optin.c libtpm/pcrs.c \
+	# libtpm/raw.c 
+	# c libtpm/session.c libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
+	# libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_dev.c 
 # libtpm/tpmutil_unixio.c libtpm/tpmutil_sock.c libtpm/tpmutil_libtpms.c
 # libtpm/chgauth.c  libtpm/management.c libtpm/owner.c libtpm/ownertpmdiag.c libtpm/maintenance.c libtpm/daa.c libtpm/debug.c
 

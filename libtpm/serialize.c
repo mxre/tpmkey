@@ -52,7 +52,7 @@
 #include "tpmfunc.h"
 
 #include "newserialize.h"
-
+#if 0
 uint32_t TPM_WritePCRComposite(struct tpm_buffer *buffer, TPM_PCR_COMPOSITE * comp)
 {
 	uint32_t ret;
@@ -348,7 +348,7 @@ uint32_t TPM_HashPubKey(keydata * pubkey, unsigned char * digest)
 	}
 	return len;
 }
-
+#endif
 
 
 uint32_t TPM_ReadFile(const char * filename, unsigned char ** buffer, uint32_t * buffersize)
@@ -403,7 +403,7 @@ uint32_t TPM_WriteFile(const char * filename, unsigned char * buffer, uint32_t b
 	
 	return ret;
 }
-
+#if 0
 uint32_t TPM_ReadKeyfile(const char * filename, keydata * k)
 {
 	unsigned char * buffer = NULL;
@@ -915,7 +915,7 @@ uint32_t TPM_ReadDAInfoLimited(struct tpm_buffer *buffer,
 	return TSS_parsebuff(FORMAT_TPM_DA_INFO_LIMITED, buffer, offset,
 	                     PARAMS_TPM_DA_INFO_LIMITED_R(tdil));
 } 
-
+#endif
 uint32_t TPM_WriteTransportLogIn(struct tpm_buffer *buffer,
                                  TPM_TRANSPORT_LOG_IN *ttli)
 {
@@ -944,7 +944,7 @@ uint32_t TPM_ReadCurrentTicks(struct tpm_buffer *buffer,
 	return TSS_parsebuff(FORMAT_TPM_CURRENT_TICKS, buffer, offset,
 	                     PARAMS_TPM_CURRENT_TICKS_R(tct));
 }
-
+#if 0
 /****************************************************************************/
 /*                                                                          */
 /* Walk down a Key blob extracting information                              */
@@ -969,3 +969,4 @@ uint32_t TSS_PubKeyExtract(const struct tpm_buffer *tb, uint32_t offset,
 	                    PARAMS_TPM_PUBKEY_EMB_RSA_R(k));
 	return ret;
 }
+#endif

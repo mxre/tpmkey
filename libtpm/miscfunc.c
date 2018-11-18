@@ -622,6 +622,7 @@ struct tpm_buffer *TSS_AllocTPMBuffer(int len)
 		static int buf_len = -1;
 		if (buf_len == -1) {
 			uint32_t ret = -1;
+#if 0
 			/* MUST check if GetCapability is audited... */
 			_TPM_IsAuditedOrdinal(TPM_ORD_GetCapability,&ret);
 			if (0 == ret) {
@@ -630,6 +631,7 @@ struct tpm_buffer *TSS_AllocTPMBuffer(int len)
 				                        &scap,
 				                        &response);
 			}
+#endif
 			if ( 0 != ret ) {
 				buf_len = 2 * 1024;
 			} else {
