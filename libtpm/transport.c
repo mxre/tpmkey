@@ -48,7 +48,6 @@
 #ifdef TPM_WINDOWS
 #include <winsock2.h>
 #endif
-#include <openssl/aes.h>
 #include <tpm.h>
 #include <tpmfunc.h>
 #include <tpmutil.h>
@@ -1175,10 +1174,10 @@ static uint32_t encWrappedCommand(struct tpm_buffer *tb,
 				enc->buffer[enc_start+i] = x1[i] ^ tb->buffer[enc_start+i];
 			}
 		} else if (algId == TPM_ALG_AES128) {
-			int rc;
-			AES_KEY aeskey;
+			// int rc;
+			// AES_KEY aeskey;
 			unsigned char iv[TPM_AES_BLOCK_SIZE];
-			int num;
+			// int num;
 			ret = TSS_buildbuff("% % %", &seed,
 			                     TPM_NONCE_SIZE, TSS_Session_GetENonce(sess),
 			                       TPM_NONCE_SIZE, transNonceOdd,
@@ -1202,24 +1201,21 @@ static uint32_t encWrappedCommand(struct tpm_buffer *tb,
 }			
 #endif
 			SET_TPM_BUFFER(enc, tb->buffer, tb->used);
-			rc = AES_set_encrypt_key(TSS_Session_GetAuth(sess),
-			                         TPM_AES_BITS,
-			                         &aeskey);
-                        (void)rc;
-			num = 0;
+			// num = 0;
 			if (encScheme == TPM_ES_SYM_CTR) {
 				TPM_AES_ctr128_Encrypt(&enc->buffer[enc_start],	/* out */
 						       &tb ->buffer[enc_start],	/* in */
 						       enc_len,
-						       &aeskey,
+						       TSS_Session_GetAuth(sess),
+			                   TPM_AES_BITS,
 						       iv);
 			} else {
-				AES_ofb128_encrypt(&tb ->buffer[enc_start],
-				                   &enc->buffer[enc_start],
-				                   enc_len,
-				                   &aeskey,
-				                   iv,
-				                   &num);
+                gcry_cipher_hd_t aes;
+                gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_OFB, 0);
+                gcry_cipher_setiv(aes, iv, 16);
+                gcry_cipher_setkey(aes, TSS_Session_GetAuth(sess), TPM_AES_BITS);
+                gcry_cipher_encrypt(aes, &enc->buffer[enc_start], enc_len, &tb ->buffer[enc_start], enc_len);
+                gcry_cipher_close(aes);
 			}
 		} else {
 			SET_TPM_BUFFER(enc,tb->buffer,tb->used);
@@ -1387,10 +1383,10 @@ static uint32_t decWrappedCommand(struct tpm_buffer *tb,
 				res->buffer[plain+i] = x1[i] ^ tb->buffer[enc_start+i];
 			}
 		} else if (algId == TPM_ALG_AES128 && (int)enc_len > 0) {
-			int rc;
-			AES_KEY aeskey;
+			// int rc;
+			// AES_KEY aeskey;
 			unsigned char iv[TPM_AES_BLOCK_SIZE];
-			int num;
+			// int num;
 			ret = TSS_buildbuff("% % %", &seed,
 			                     TPM_NONCE_SIZE, TSS_Session_GetENonce(sess),
 			                       TPM_NONCE_SIZE, transNonceOdd,
@@ -1415,24 +1411,21 @@ static uint32_t decWrappedCommand(struct tpm_buffer *tb,
 #endif
 			SET_TPM_BUFFER(res, &tb->buffer[offset], inner_len);
 
-			rc = AES_set_encrypt_key(TSS_Session_GetAuth(sess),
-			                         TPM_AES_BITS,
-			                         &aeskey);
-                        (void)rc;
-			num = 0;
+			// num = 0;
 			if (encScheme == TPM_ES_SYM_CTR) {
-				TPM_AES_ctr128_Encrypt(&res->buffer[plain],	/* out */
+				TPM_AES_ctr128_Encrypt(&res->buffer[enc_start],	/* out */
 						       &tb ->buffer[enc_start],	/* in */
 						       enc_len,
-						       &aeskey,
+						       TSS_Session_GetAuth(sess),
+			                   TPM_AES_BITS,
 						       iv);
 			} else {
-				AES_ofb128_encrypt(&tb ->buffer[enc_start],
-				                   &res->buffer[plain],
-				                   enc_len,
-				                   &aeskey,
-				                   iv,
-				                   &num);
+				gcry_cipher_hd_t aes;
+                gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_OFB, 0);
+                gcry_cipher_setiv(aes, iv, 16);
+                gcry_cipher_setkey(aes, TSS_Session_GetAuth(sess), TPM_AES_BITS);
+                gcry_cipher_encrypt(aes, &res->buffer[enc_start], enc_len, &tb ->buffer[enc_start], enc_len);
+                gcry_cipher_close(aes);
 			}
 		} else {
 			SET_TPM_BUFFER(res, &tb->buffer[offset], inner_len);

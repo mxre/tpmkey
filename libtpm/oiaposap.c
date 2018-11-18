@@ -76,17 +76,11 @@ void TPM_CreateEncAuth(const session *sess, const unsigned char *in, unsigned ch
 	int use_xor = 0;
 	TPM_DetermineSessionEncryption(sess, &use_xor);
 	if (!use_xor) {
-		AES_KEY aeskey;
 		/*
 		 * use AES
 		 */
-		int rc;
 		unsigned char ctr[TPM_AES_BLOCK_SIZE];
 
-		rc = AES_set_encrypt_key(TSS_Session_GetAuth((session *)sess),
-		                         TPM_AES_BITS,
-		                         &aeskey);
-                (void)rc;
 		if (!nonceodd) {
 			memcpy(ctr,
 			       TSS_Session_GetENonce((session *)sess),
@@ -100,7 +94,8 @@ void TPM_CreateEncAuth(const session *sess, const unsigned char *in, unsigned ch
 		TPM_AES_ctr128_Encrypt(out,
 				       in,
 				       TPM_HASH_SIZE,
-				       &aeskey,
+				       TSS_Session_GetAuth((session *)sess),
+                       TPM_AES_BITS,
 				       ctr);
 	} else {
 		uint32_t i;

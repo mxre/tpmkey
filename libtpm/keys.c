@@ -56,10 +56,7 @@
 #include <hmac.h>
 #include <newserialize.h>
 
-#include <openssl/rsa.h>
-#include <openssl/sha.h>
-#include <openssl/bn.h>
-
+#include <gcrypt.h>
 
 /****************************************************************************/
 /*                                                                          */
@@ -138,16 +135,13 @@ uint32_t TPM_CreateEndorsementKeyPair(unsigned char * pubkeybuff,
 	 * Verify the checksum...
 	 */
 	{
-		SHA_CTX sha;
+		gcry_md_hd_t sha;
 		unsigned char digest[TPM_DIGEST_SIZE];
-		SHA1_Init(&sha);
-		SHA1_Update(&sha,
-		            &tpmdata.buffer[TPM_DATA_OFFSET],
-		            size);
-		SHA1_Update(&sha,
-		            nonce,
-		            TPM_HASH_SIZE);
-		SHA1_Final(digest,&sha);
+        gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+        gcry_md_write(sha, &tpmdata.buffer[TPM_DATA_OFFSET], size);
+        gcry_md_write(sha, nonce, TPM_HASH_SIZE);
+        gcry_md_extract(sha, 0, digest, TPM_DIGEST_SIZE);
+        gcry_md_close(sha);
 		if (0 != memcmp(digest,
 		                &tpmdata.buffer[TPM_DATA_OFFSET+size],
 		                TPM_DIGEST_SIZE)) {
@@ -242,16 +236,13 @@ uint32_t TPM_CreateRevocableEK(TPM_BOOL genreset,
 	 * Verify the checksum...
 	 */
 	{
-		SHA_CTX sha;
+		gcry_md_hd_t sha;
 		unsigned char digest[TPM_DIGEST_SIZE];
-		SHA1_Init(&sha);
-		SHA1_Update(&sha,
-		            &tpmdata.buffer[TPM_DATA_OFFSET],
-		            size);
-		SHA1_Update(&sha,
-		            nonce,
-		            TPM_HASH_SIZE);
-		SHA1_Final(digest,&sha);
+        gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+        gcry_md_write(sha, &tpmdata.buffer[TPM_DATA_OFFSET], size);
+        gcry_md_write(sha, nonce, TPM_HASH_SIZE);
+        gcry_md_extract(sha, 0, digest, TPM_DIGEST_SIZE);
+        gcry_md_close(sha);
 		if (0 != memcmp(digest,
 		                &tpmdata.buffer[TPM_DATA_OFFSET+size],
 		                TPM_DIGEST_SIZE)) {
@@ -327,16 +318,13 @@ uint32_t TPM_ReadPubek(pubkeydata *k)
 	 * Verify the checksum...
 	 */
 	{
-		SHA_CTX sha;
+		gcry_md_hd_t sha;
 		unsigned char digest[TPM_DIGEST_SIZE];
-		SHA1_Init(&sha);
-		SHA1_Update(&sha,
-		            &tpmdata.buffer[TPM_DATA_OFFSET],
-		            len);
-		SHA1_Update(&sha,
-		            antiReplay,
-		            TPM_HASH_SIZE);
-		SHA1_Final(digest,&sha);
+        gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+        gcry_md_write(sha, &tpmdata.buffer[TPM_DATA_OFFSET], len);
+        gcry_md_write(sha, antiReplay, TPM_HASH_SIZE);
+        gcry_md_extract(sha, 0, digest, TPM_DIGEST_SIZE);
+        gcry_md_close(sha);
 		if (0 != memcmp(digest,
 		                &tpmdata.buffer[TPM_DATA_OFFSET+len],
 		                TPM_DIGEST_SIZE)) {
@@ -1280,40 +1268,26 @@ int TSS_SymKeySize(const unsigned char * keybuff) {
 /* Convert a TPM public key to an OpenSSL RSA public key                    */
 /*                                                                          */
 /****************************************************************************/
-RSA *TSS_convpubkey(pubkeydata *k)
+gcry_sexp_t TSS_convpubkey(pubkeydata *k)
    {
-   RSA  *rsa;
-   BIGNUM *mod;
-   BIGNUM *exp;
+   gcry_sexp_t rsa;
+   gcry_mpi_t n;
+   gcry_mpi_t e;
    
-   /* create the necessary structures */
-   rsa = RSA_new();
-   mod = BN_new();
-   exp = BN_new();
-   if (rsa == NULL || mod == NULL || exp == NULL) {
-      if (rsa) {
-         RSA_free(rsa);
-      }
-      if (mod) {
-         BN_free(mod);
-      }
-      if (exp) {
-         BN_free(exp);
-      }
-      return NULL;
-   }
    /* convert the raw public key values to BIGNUMS */
-   BN_bin2bn(k->pubKey.modulus,k->pubKey.keyLength,mod);
+   gcry_mpi_scan(&n, GCRYMPI_FMT_USG, k->pubKey.modulus, k->pubKey.keyLength, NULL);
+
    if (0 == k->algorithmParms.u.rsaKeyParms.exponentSize) {
       unsigned char exponent[3] = {0x1,0x0,0x1};
-      BN_bin2bn(exponent,3,exp);
+      gcry_mpi_scan(&e, GCRYMPI_FMT_USG, exponent, 3, NULL);
    } else {
-      BN_bin2bn(k->algorithmParms.u.rsaKeyParms.exponent,
-                k->algorithmParms.u.rsaKeyParms.exponentSize,
-                exp);
+      gcry_mpi_scan(&e, GCRYMPI_FMT_USG,
+                    k->algorithmParms.u.rsaKeyParms.exponent, 
+                    k->algorithmParms.u.rsaKeyParms.exponentSize, NULL);
    }
    /* set up the RSA public key structure */
-   RSA_set0_key(rsa,mod,exp,NULL);
+   size_t error_pos = 0;
+   gcry_sexp_build(&rsa, &error_pos, "(public-key(rsa(n %M)(e %M)))", n, e);
    return rsa;
    }
 

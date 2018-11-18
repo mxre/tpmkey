@@ -198,36 +198,31 @@ uint32_t TPM_UnBind(uint32_t keyhandle,
 /*           of the bound data                                              */
 /*                                                                          */
 /****************************************************************************/
-uint32_t TSS_Bind(RSA *key,
+uint32_t TSS_Bind(gcry_sexp_t key,
                   const struct tpm_buffer *data,
                   struct tpm_buffer *blob)
 {
 	uint32_t ret;
-	unsigned char * blob2 = NULL;
-	int size = RSA_size(key);
-	unsigned char tcpa[] = "TCPA";
+	// unsigned char tcpa[] = "TCPA";
 	
-	blob2 = malloc(size);
-	if (NULL == blob2) {
-		return ERR_MEM_ERR;
-	}
 	/* check input arguments */
 	if (key == NULL || data == NULL || blob == NULL) 
 		return ERR_NULL_ARG;
 
-	ret = RSA_padding_add_PKCS1_OAEP(blob2,size,data->buffer,data->used,tcpa,4);
-	if (ret != 1) {
-		 free(blob2);
+	gcry_sexp_t in;
+    gcry_sexp_build(&in, NULL, "(data(flags oaep)(value %b))", data->used, data->buffer);
+    gcry_sexp_t res;
+    ret = gcry_pk_encrypt(&res, in, key);
+	if (ret != 0) 
 		 return ERR_CRYPT_ERR;
-	}
-	ret = RSA_public_encrypt(size,blob2,blob->buffer,key,RSA_NO_PADDING);
-	free(blob2);
-	if ((int)ret == -1) 
-		 return ERR_CRYPT_ERR;
-	blob->used = ret;
+    size_t size;
+    const char* tmp = gcry_sexp_nth_data(res, 0, &size);
+    memcpy(blob->buffer, tmp, size);
+    blob->used = (uint32_t) size;
 	return 0;
 }
 
+#if 0
 uint32_t TSS_BindPKCSv15(RSA *key,
                          const struct tpm_buffer *data,
                          struct tpm_buffer *blob)
@@ -257,3 +252,4 @@ uint32_t TSS_BindPKCSv15(RSA *key,
 	blob->used = ret;
 	return 0;
 }
+#endif

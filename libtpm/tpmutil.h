@@ -42,8 +42,6 @@
 
 #include <stdint.h>
 
-#include <openssl/aes.h>
-
 #include <tpm_structures.h>
 
 #include <oiaposap.h>
@@ -122,7 +120,8 @@ uint32_t parseHash(char *string, unsigned char *hash);
 TPM_RESULT TPM_AES_ctr128_Encrypt(unsigned char *data_out,
 				  const unsigned char *data_in,
 				  unsigned long data_size,
-				  const AES_KEY *aes_enc_key,
+				  const unsigned char *aes_key,
+                  unsigned int aes_key_len,
 				  unsigned char ctr[TPM_AES_BLOCK_SIZE]);
 TPM_RESULT TSS_MGF1(unsigned char       *mask,
                     uint32_t             maskLen,

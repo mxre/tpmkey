@@ -4,7 +4,6 @@ build() {
     # for debugging
     add_module "tpm_tis"
     add_binary "/usr/lib/tpmkey"
-    add_binary "/usr/bin/ltrace"
     add_systemd_unit "tpmkey.service"
     add_systemd_unit "cryptsetup-pre.target"
     add_systemd_unit "cryptsetup.target"

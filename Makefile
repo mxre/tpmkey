@@ -1,4 +1,4 @@
-LIBRARIES = -lkeyutils -ludev -lcrypto
+LIBRARIES = -lkeyutils -ludev -lgcrypt
 INCLUDES = -Ilibtpm
 
 # source files
@@ -6,15 +6,16 @@ SOURCES = \
 	src/tpmkey.c
 
 LIBTPM = \
-	libtpm/auditing.c libtpm/bind.c libtpm/chgauth.c libtpm/context.c \
-	libtpm/counter.c libtpm/daa.c libtpm/debug.c libtpm/delegation.c libtpm/dir.c \
+	libtpm/auditing.c libtpm/bind.c libtpm/context.c \
+	libtpm/counter.c  libtpm/delegation.c libtpm/dir.c \
 	libtpm/eviction.c libtpm/hmac.c libtpm/identity.c libtpm/keys.c libtpm/keyswap.c \
-	libtpm/maintenance.c libtpm/management.c libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
-	libtpm/oiaposap.c libtpm/optin.c libtpm/owner.c libtpm/ownertpmdiag.c \
-	libtpm/pcrs.c libtpm/raw.c libtpm/rng.c libtpm/seal.c libtpm/serialize.c libtpm/session.c \
+	libtpm/migrate.c libtpm/miscfunc.c libtpm/nv.c \
+	libtpm/oiaposap.c libtpm/optin.c libtpm/pcrs.c \
+	libtpm/raw.c libtpm/rng.c libtpm/seal.c libtpm/serialize.c libtpm/session.c \
 	libtpm/sha.c libtpm/signature.c libtpm/startup.c libtpm/testing.c \
 	libtpm/ticks.c libtpm/tpmutil.c libtpm/tpmutil_dev.c libtpm/transport.c
 # libtpm/tpmutil_unixio.c libtpm/tpmutil_sock.c libtpm/tpmutil_libtpms.c
+# libtpm/chgauth.c  libtpm/management.c libtpm/owner.c libtpm/ownertpmdiag.c libtpm/maintenance.c libtpm/daa.c libtpm/debug.c
 
 # set required C flags
 CFLAGS += -mrdrnd -std=gnu11 -D_GNU_SOURCE=1 -DTPM_POSIX=1 -DTPM_V12=1 -DTPM_USE_TAG_IN_STRUCTURE=1 -DTPM_USE_CHARDEV=1 -DTPM_NV_DISK=1 -DTPM_AES=1
@@ -37,7 +38,8 @@ dist: LDFLAGS += -pie -Wl,-s,-O1,--sort-common,-z,relro,-z,now
 dist: all
 
 # build for debug
-debug: CFLAGS += -O0 -g3 -Wall -Wextra -DDEBUG
+debug: CFLAGS += -O0 -g3 -Wall -Wextra
+# -DDEBUG
 debug: LDFLAGS +=
 debug: all
 

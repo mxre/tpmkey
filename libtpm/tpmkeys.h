@@ -41,12 +41,10 @@
 #define TPMKEYS_H
 #include "tpm.h"
 #include "tpm_structures.h"
-#include <openssl/rsa.h>
 
 #ifndef TPM_MAXIMUM_KEY_SIZE
 #define TPM_MAXIMUM_KEY_SIZE  4096
 #endif
-
 
 #define TPM_SIZED_BUFFER_EMB(SIZE_OF_BUFFER,uniq,name) \
 struct uniq { \

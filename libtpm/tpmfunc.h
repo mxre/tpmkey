@@ -47,6 +47,8 @@
 #include <oiaposap.h>
 #include <tpm_structures.h>
 
+#include <gcrypt.h>
+
 /* section 3: Admin startup and state */
 uint32_t TPM_Init(void); /* just for testing */
 uint32_t TPM_Startup(uint16_t type);
@@ -352,10 +354,10 @@ uint32_t TPM_UnBind(uint32_t keyhandle,
                     unsigned char *keyauth,
                     unsigned char *data, uint32_t datalen,
                     unsigned char *blob, uint32_t *bloblen);
-uint32_t TSS_Bind(RSA *key,
+uint32_t TSS_Bind(gcry_sexp_t key,
                   const struct tpm_buffer *data,
                   struct tpm_buffer *blob);
-uint32_t TSS_BindPKCSv15(RSA *key,
+uint32_t TSS_BindPKCSv15(gcry_sexp_t key,
                          const struct tpm_buffer *data,
                          struct tpm_buffer *blob);
 uint32_t TPM_LoadKey(uint32_t keyhandle, unsigned char *keyauth,
@@ -695,7 +697,7 @@ uint32_t TPM_ReadSTClearFlags(const struct tpm_buffer *tb,
 
 uint32_t  TSS_KeyExtract(const struct tpm_buffer *tb, uint32_t offset, keydata *k);
 uint32_t  TSS_PubKeyExtract(const struct tpm_buffer *tb, uint32_t offset, pubkeydata *k);
-RSA      *TSS_convpubkey(pubkeydata *k);
+gcry_sexp_t TSS_convpubkey(pubkeydata *k);
 uint32_t  TPM_WriteKey(struct tpm_buffer *tb, keydata *k);
 uint32_t  TPM_ReadKey(const struct tpm_buffer *tb, uint32_t offset, keydata *k);
 uint32_t  TPM_WriteKeyPub(struct tpm_buffer *tp, keydata *k);
@@ -782,7 +784,7 @@ uint32_t _TPM_SetAuditStatus(uint32_t ord, TPM_BOOL enable);
 uint32_t TPM_ValidateSignature(uint16_t sigscheme,
                                struct tpm_buffer *data,
                                struct tpm_buffer *signature,
-                               RSA *rsa);
+                               gcry_sexp_t rsa);
 uint32_t TPM_WriteTransportLogIn(struct tpm_buffer *buffer,
                                  TPM_TRANSPORT_LOG_IN *ttli);
 uint32_t TPM_WriteTransportLogOut(struct tpm_buffer *buffer,

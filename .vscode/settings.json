@@ -4,7 +4,11 @@
     "list": "c",
     "string_view": "c",
     "stat.h": "c",
-    "rand.h": "c"
+    "rand.h": "c",
+    "gcrypt.h": "c",
+    "gpg-error.h": "c",
+    "hmac.h": "c",
+    "types.h": "c"
   },
   "c-cpp-flylint.language": "c",
   "c-cpp-flylint.standard": [

@@ -15,7 +15,10 @@
 #include <sys/stat.h>
 #include <sys/mount.h>
 
+#include <gcrypt.h>
 #include <tpmfunc.h>
+
+//#define TEST1 0
 
 // EFI GUID type
 typedef struct {          
@@ -325,6 +328,16 @@ cleanup_udev:
     return ret;
 }
 
+void init_gcrypt() {
+    if (!gcry_check_version (GCRYPT_VERSION)) {
+        fputs("libgcrypt version mismatch: compiled for version " GCRYPT_VERSION "\n", stderr);
+        exit(2);
+    }
+
+    gcry_control(GCRYCTL_DISABLE_SECMEM, 0);
+    gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
+}
+
 /**
  * Unseal key with TPM, store string in keyring
  */
@@ -340,11 +353,18 @@ static bool unseal_key(const char* keyfilename) {
     uint32_t parent_key_handle = TPM_KH_SRK;
     // well known password
     unsigned char pass[20] = {0};
-    //strcpy(filename, keyfilename);
+#ifdef TEST1
+    strcpy(filename, keyfilename);
+#endif
+
+    init_gcrypt();
+
+#ifndef TEST1
     if (keyfilename[0] == '/')
         sprintf(filename, "%s%s", MOUNT_POINT, keyfilename);
     else
         sprintf(filename, "%s/%s", MOUNT_POINT, keyfilename);
+#endif
     fd = open(filename, O_RDONLY);
     if (fd < 0) {
         fprintf(stderr, "Could not open key from '%s': %m\n", filename);
@@ -365,11 +385,11 @@ static bool unseal_key(const char* keyfilename) {
 
     err = TPM_Unseal(parent_key_handle, pass, NULL, blob, blob_length, buffer, &length);
     free(blob);
-    // printf("%u %u\n", blob_length, length);
 
     if (!err) {
-        // printf("%s\n", buffer);
-        // exit(0);
+#ifdef TEST1
+        printf("%s\n", buffer);
+#else
         if (length >= 100) {
             fprintf(stderr, "Key is too long, systemd does not like that\n");
             return false;
@@ -383,14 +403,14 @@ static bool unseal_key(const char* keyfilename) {
 
         keyctl(KEYCTL_SET_TIMEOUT, kid, 5 * 60, 0, 0);
         keyctl(KEYCTL_SETPERM, kid, (key_perm_t) 0x03010000, 0, 0);
-
+#endif
 #if 0
         FILE* fd = fopen("/ckey", "w");
         fwrite(buf, 1, length, fd);
         fclose(fd);
 #endif
     } else {
-        printf("Error %s from TPM_Unseal\n", TPM_GetErrMsg(err));
+        fprintf(stderr, "Error %s from TPM_Unseal\n", TPM_GetErrMsg(err));
         return false;
     }
 
@@ -413,8 +433,11 @@ int main () {
     char filesystem[32];
 
     char *alloc = NULL;
-    // unseal_key("pass1.bin");
-    // exit(1);
+#ifdef TEST1
+    TPM_setlog(0);
+    unseal_key("pass1.bin");
+    exit(1);
+#endif
     char *keyfilename = NULL;
     char *device_name = NULL;
     char *type = NULL;

@@ -48,9 +48,6 @@
 #endif
 #include <tpm.h>
 #include <tpmutil.h>
-#include <openssl/pem.h>
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
 #include <oiaposap.h>
 #include <hmac.h>
 #include <pcrs.h>
@@ -58,18 +55,19 @@
 #include <tpm_structures.h>
 #include "tpmfunc.h"
 
+#include <assert.h>
 
 uint32_t TPM_ValidateSignature(uint16_t sigscheme,
                                struct tpm_buffer *data,
                                struct tpm_buffer *signature,
-                               RSA *rsa)
+                               gcry_sexp_t rsa)
 {
 	STACK_TPM_BUFFER(tsi_ser);
 	unsigned char sighash[TPM_HASH_SIZE];	/* hash of quote info structure */
 	uint32_t ret = 0;
-	unsigned char padded[4096];
-	unsigned char plainarray[4096];
-	int plain, irc;
+	// unsigned char padded[4096];
+	// unsigned char plainarray[4096];
+	// int plain, irc;
 
 	switch (sigscheme) {
 		case TPM_SS_RSASSAPKCS1v15_INFO:
@@ -79,10 +77,14 @@ uint32_t TPM_ValidateSignature(uint16_t sigscheme,
 			/*
 			 ** perform an RSA verification on the signature returned by Quote
 			 */
-			ret = RSA_verify(NID_sha1, sighash, sizeof(sighash),
-			                 signature->buffer, signature->used,
-			                 rsa);
-			if (ret != 1) {
+            size_t error = 0;
+            gcry_sexp_t msg, sig;
+            gcry_mpi_t mpi;
+            gcry_sexp_build(&msg, &error, "(data(flags pkcs1)(hash sha1 %b))", signature->used, signature->buffer);
+            gcry_mpi_scan(&mpi, GCRYMPI_FMT_USG, sighash, sizeof(sighash), NULL);
+            gcry_sexp_build(&sig, &error, "(sig-val(rsa(s %M)))", mpi);
+            ret = gcry_pk_verify(sig, msg, rsa);
+			if (ret != 0) {
 				ret =  ERR_SIGNATURE;
 			} else {
 				ret = 0;
@@ -92,24 +94,9 @@ uint32_t TPM_ValidateSignature(uint16_t sigscheme,
 			/* create the hash of the quoteinfo structure for signature verification */
 			TSS_sha1(data->buffer, data->used, sighash);
 
-			plain = RSA_public_decrypt(signature->used,
-			                           signature->buffer,
-			                           plainarray,
-			                           rsa, RSA_NO_PADDING);
-			if (plain == -1) {
-				ret = ERR_SIGNATURE;
-			}
-			if (ret == 0) {
-				irc = RSA_padding_add_PKCS1_type_1(padded,plain,sighash,sizeof(sighash));
-				if (irc != 1) {
-					ret = ERR_SIGNATURE;
-				}
-			}
-			if (ret == 0) {
-				if (memcmp(padded, plainarray, plain) != 0) {
-					ret = ERR_SIGNATURE;
-				}
-			}
+            //
+            assert (1);
+			
 		break;
 		default:
 			ret = ERR_SIGNATURE;
@@ -128,7 +115,7 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
                                            uint16_t sigscheme)
 {
 	uint32_t ret;
-	RSA *rsa;			/* openssl RSA public key */
+	gcry_sexp_t rsa; /* RSA public key */
 	TPM_QUOTE_INFO tqi;
 	STACK_TPM_BUFFER (ser_tqi);
 	STACK_TPM_BUFFER(response);
@@ -141,7 +128,7 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
 	ret = TPM_GetCapability(TPM_CAP_VERSION, NULL,
 	                        &response);
 	if (ret != 0) {
-		RSA_free(rsa);
+		gcry_sexp_release(rsa);
 		return ret;
 	}
 
@@ -150,7 +137,7 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
 	memcpy(&(tqi.externalData), antiReplay, TPM_NONCE_SIZE);
 	ret = TPM_WritePCRComposite(&ser_tpc, tpc);
 	if ((ret & ERR_MASK)) {
-		RSA_free(rsa);
+		gcry_sexp_release(rsa);
 		return ret;
 	}
 	/* create the hash of the PCR_composite data for the quoteinfo structure */
@@ -158,7 +145,7 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
 
 	ret = TPM_WriteQuoteInfo(&ser_tqi, &tqi);
 	if ((ret & ERR_MASK)) {
-		RSA_free(rsa);
+		gcry_sexp_release(rsa);
 		return ret;
 	}
 	
@@ -166,7 +153,7 @@ uint32_t TPM_ValidatePCRCompositeSignature(TPM_PCR_COMPOSITE *tpc,
 	                            &ser_tqi,
 	                            signature,
 	                            rsa);
-	RSA_free(rsa);
+	gcry_sexp_release(rsa);
 	return ret;
 }
 
@@ -620,7 +607,7 @@ uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char *pcrinfo, uint32_t *len)
    uint32_t numregs;
    uint32_t ret;
    uint32_t valsize;
-   SHA_CTX sha;
+   gcry_md_hd_t sha;
    
    
    /* check arguments */
@@ -661,15 +648,16 @@ uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char *pcrinfo, uint32_t *len)
    myinfo.selsize = ntohs(TPM_PCR_MASK_SIZE);
    valsize = ntohl(numregs * TPM_HASH_SIZE);
    /* calculate composite hash */
-   SHA1_Init(&sha);
-   SHA1_Update(&sha,&myinfo.selsize,TPM_U16_SIZE);
-   SHA1_Update(&sha,&myinfo.select,TPM_PCR_MASK_SIZE);
-   SHA1_Update(&sha,&valsize,TPM_U32_SIZE);
+   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+   gcry_md_write(sha,&myinfo.selsize,TPM_U16_SIZE);
+   gcry_md_write(sha,&myinfo.select,TPM_PCR_MASK_SIZE);
+   gcry_md_write(sha,&valsize,TPM_U32_SIZE);
    for (i = 0;i < numregs;++i)
       {
-      SHA1_Update(&sha,&(valarray[(i*TPM_HASH_SIZE)]),TPM_HASH_SIZE);
+      gcry_md_write(sha,&(valarray[(i*TPM_HASH_SIZE)]),TPM_HASH_SIZE);
       }
-   SHA1_Final(myinfo.relhash,&sha);
+   gcry_md_extract(sha, 0, myinfo.relhash, TPM_HASH_SIZE);
+   gcry_md_close(sha);
    memcpy(myinfo.crthash,myinfo.relhash,TPM_HASH_SIZE);
    memcpy(pcrinfo,&myinfo,sizeof (struct pcrinfo));
    *len = sizeof (struct pcrinfo);

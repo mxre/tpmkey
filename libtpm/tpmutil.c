@@ -58,8 +58,7 @@
 #endif
 
 #include <immintrin.h>
-#include <openssl/sha.h>
-#include <openssl/aes.h>
+#include <gcrypt.h>
 
 #include "tpm.h"
 #include "tpmfunc.h"
@@ -70,10 +69,12 @@
 #include "tpm_lowlevel.h"
 
 /* local prototypes */
+#if 0
 static void TPM_XOR(unsigned char *out,
                     const unsigned char *in1,
 	            const unsigned char *in2,
 	            size_t length);
+#endif
 static TPM_RESULT TPMC_SHA1_valist(TPM_DIGEST md,
                                    uint32_t length0, unsigned char *buffer0,
                                    va_list ap);
@@ -872,7 +873,7 @@ static uint32_t createTransport(session *transSession, uint32_t *in_tp)
 		int i;
 		STACK_TPM_BUFFER(buffer)
 		STACK_TPM_BUFFER(secret)
-		RSA *rsa;
+		gcry_sexp_t rsa;
 		pubkeydata pubkey;
 
 		if (1 != sscanf(tpm_transport_ek,"%x",&ekhandle)) {
@@ -1252,11 +1253,12 @@ uint32_t TPM_Transmit_NoTransport(struct tpm_buffer *tb,const char *msg)
 /****************************************************************************/
 void TSS_sha1(void *input, unsigned int len, unsigned char *output)
 {
-	SHA_CTX sha;
+	gcry_md_hd_t sha;
    
-	SHA1_Init(&sha);
-	SHA1_Update(&sha,input,len);
-	SHA1_Final(output,&sha);
+	gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+	gcry_md_write(sha,input,len);
+    gcry_md_extract(sha,0,output,20);
+	gcry_md_close(sha);
 }
 
 /****************************************************************************/
@@ -1273,16 +1275,17 @@ uint32_t TSS_SHAFile(const char *filename, unsigned char *buffer)
 	if (NULL != f) {
 		size_t len;
 		unsigned char mybuffer[10240];
-		SHA_CTX sha;
-		SHA1_Init(&sha);
+		gcry_md_hd_t sha;
+		gcry_md_open(&sha, GCRY_MD_SHA1, 0);
 		do {
 			len = fread(mybuffer, 1, sizeof(mybuffer), f);
 			if (len) {
-				SHA1_Update(&sha, mybuffer, len);
+                gcry_md_write(sha,mybuffer,len);
 			}
 		} while (len == sizeof(mybuffer));
 		fclose(f);
-		SHA1_Final(buffer, &sha);
+        gcry_md_extract(sha,0,buffer,20);
+	    gcry_md_close(sha);
 	} else {
 		ret = ERR_BAD_FILE;
 	}
@@ -1301,8 +1304,8 @@ int TPM_setlog(int flag)
 	
 	old = logflag;
 	/* user has control if TPM_DUMP_COMMANDS == "0" */
-	if (NULL == dump || strcmp(dump,"0") == 0)
-		logflag = flag;
+	if (NULL == dump || strcmp(dump,"0") == 0) logflag = flag;
+    else logflag = strtol(dump, NULL, 10);
 	return old;
 }
 
@@ -1405,13 +1408,22 @@ uint32_t parseHash(char *string, unsigned char *hash)
 TPM_RESULT TPM_AES_ctr128_Encrypt(unsigned char *data_out,
 				  const unsigned char *data_in,
 				  unsigned long data_size,
-				  const AES_KEY *aes_enc_key,
+				  const unsigned char *aes_key,
+                  unsigned int aes_key_len,
 				  unsigned char ctr[TPM_AES_BLOCK_SIZE])
 {
     TPM_RESULT 	rc = 0;
-    uint32_t cint;
-    unsigned char pad_buffer[TPM_AES_BLOCK_SIZE];	/* the XOR pad */
+    // uint32_t cint;
+    // unsigned char pad_buffer[TPM_AES_BLOCK_SIZE];	/* the XOR pad */
 
+    gcry_cipher_hd_t aes;
+    gcry_cipher_open(&aes, GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_CTR, 0);
+    gcry_cipher_setctr(aes, ctr, 16);
+    gcry_cipher_setkey(aes, aes_key, aes_key_len);
+    gcry_cipher_encrypt(aes, data_out, data_size, data_in, data_size);
+    gcry_cipher_close(aes);
+
+#if 0
     while (data_size != 0) {
 	/* get an XOR pad array by encrypting the CTR with the AES key */
 	AES_encrypt(ctr, pad_buffer, aes_enc_key);
@@ -1434,14 +1446,15 @@ TPM_RESULT TPM_AES_ctr128_Encrypt(unsigned char *data_out,
 	    STORE32(ctr, 12, cint);	/* uint32_t to byte array */
 	}
     }
+#endif
     return rc;
 }
-
 
 /* TPM_XOR XOR's 'in1' and 'in2' of 'length', putting the result in 'out'
 
  */
 
+#if 0
 static void TPM_XOR(unsigned char *out,
 		    const unsigned char *in1,
 		    const unsigned char *in2,
@@ -1454,7 +1467,7 @@ static void TPM_XOR(unsigned char *out,
     }
     return;
 }
-
+#endif
 /* TSS_MGF1() generates an MGF1 'array' of length 'arrayLen' from 'seed' of length 'seedlen'
 
    The openSSL DLL doesn't export MGF1 in Windows or Linux 1.0.0, so this version is created from
@@ -1617,54 +1630,38 @@ static TPM_RESULT TPMC_SHA1_valist(TPM_DIGEST md,
 
 static TPM_RESULT TPMC_SHA1Init(void **context)
 {
-    TPM_RESULT  rc = 0;
-
-    if (rc== 0) {
-	*context = malloc(sizeof(SHA_CTX));
-	if (*context == NULL) {
-	    rc = ERR_MEM_ERR;
-	}
-    }
-    if (rc== 0) {
-        SHA1_Init(*context);
-    }
-    return rc;
+    return gcry_md_open((gcry_md_hd_t*) context, GCRY_MD_SHA1, 0);
 }
 
 
 static TPM_RESULT TPMC_SHA1_Update(void *context, const unsigned char *data, uint32_t length)
 {
-    TPM_RESULT  rc = 0;
+    if (context) {
+        gcry_md_write((gcry_md_hd_t) context, data, length);
+        return TPM_SUCCESS;
+    } else
+        return TPM_SHA_THREAD;
     
-    if (context != NULL) {
-        SHA1_Update(context, data, length);
-    }
-    else {
-        rc = TPM_SHA_THREAD;
-    }
-    return rc;
 }
 
 
 static TPM_RESULT TPMC_SHA1Final(unsigned char *md, void *context)
 {
-    TPM_RESULT  rc = 0;
-    
-    if (context != NULL) {
-        SHA1_Final(md, context);
-    }
-    else {
-        rc = TPM_SHA_THREAD;
-    }
-    return rc;
+    if (context) {
+        if (gcry_md_extract((gcry_md_hd_t) context, 0, md, 20) != 0)
+            return TPM_SHA_ERROR;
+        return TPM_SUCCESS;
+    } else
+        return TPM_SHA_THREAD;
+        
 }
 
 static TPM_RESULT TPMC_SHA1Delete(void **context)
 {
-    if (*context != NULL) {
-        free(*context);
-        *context = NULL;
+    if (context) {
+        gcry_md_close(*context);
+        context = NULL;
     }
-    return 0;
+    return TPM_SUCCESS;
 }
 

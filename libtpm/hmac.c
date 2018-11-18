@@ -51,8 +51,7 @@
 #include <oiaposap.h>
 #include <hmac.h>
 
-#include <openssl/sha.h>
-#include <openssl/hmac.h>
+#include <gcrypt.h>
 
 #define TPM_TAG_RSP_COMMAND       0x00C4
 #define TPM_TAG_RSP_AUTH1_COMMAND 0x00C5
@@ -94,7 +93,7 @@ uint32_t TSS_checkhmac1(const struct tpm_buffer *tb, uint32_t command, unsigned 
    const unsigned char *authdata;
    unsigned char testhmac[20];
    unsigned char paramdigest[20];
-   SHA_CTX  sha;
+   gcry_md_hd_t sha;
    unsigned int dlen;
    unsigned int dpos;
    va_list argp;
@@ -117,9 +116,10 @@ uint32_t TSS_checkhmac1(const struct tpm_buffer *tb, uint32_t command, unsigned 
    authdata     = buffer + bufsize - TPM_HASH_SIZE;
    continueflag = authdata - 1;
    enonce       = continueflag - TPM_NONCE_SIZE;
-   SHA1_Init(&sha);
-   SHA1_Update(&sha,&result,4);
-   SHA1_Update(&sha,&ordinal,4);
+
+   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+   gcry_md_write(sha,&result,4);
+   gcry_md_write(sha,&ordinal,4);
    va_start(argp,keylen);
    for (;;) {
       dlen = (unsigned int)va_arg(argp,unsigned int);
@@ -128,10 +128,12 @@ uint32_t TSS_checkhmac1(const struct tpm_buffer *tb, uint32_t command, unsigned 
       if (dpos + dlen > tb->used) {
         return ERR_BUFFER;
       }
-      SHA1_Update(&sha,buffer+dpos,dlen);
+      gcry_md_write(sha,buffer+dpos,dlen);
    }
    va_end(argp);
-   SHA1_Final(paramdigest,&sha);
+   unsigned char* tmp = gcry_md_read(sha, 0);
+   memcpy(paramdigest, tmp, 20);
+   gcry_md_close(sha);
    TSS_rawhmac(testhmac,key,keylen,TPM_HASH_SIZE,paramdigest,
                TPM_NONCE_SIZE,enonce,
                TPM_NONCE_SIZE,ononce,
@@ -153,7 +155,7 @@ uint32_t TSS_checkhmac1New(const struct tpm_buffer *tb, uint32_t command, sessio
    const unsigned char *authdata;
    unsigned char testhmac[20];
    unsigned char paramdigest[20];
-   SHA_CTX  sha;
+   gcry_md_hd_t sha;
    unsigned int dlen;
    unsigned int dpos;
    va_list argp;
@@ -176,19 +178,21 @@ uint32_t TSS_checkhmac1New(const struct tpm_buffer *tb, uint32_t command, sessio
    authdata     = buffer + bufsize - TPM_HASH_SIZE;
    continueflag = authdata - 1;
    enonce       = continueflag - TPM_NONCE_SIZE;
-   SHA1_Init(&sha);
-   SHA1_Update(&sha,&result,4);
-   SHA1_Update(&sha,&ordinal,4);
+   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+   gcry_md_write(sha,&result,4);
+   gcry_md_write(sha,&ordinal,4);
    va_start(argp,keylen);
    for (;;)
       {
       dlen = (unsigned int)va_arg(argp,unsigned int);
       if (dlen == 0) break;
       dpos = (unsigned int)va_arg(argp,unsigned int);
-      SHA1_Update(&sha,buffer+dpos,dlen);
+      gcry_md_write(sha,buffer+dpos,dlen);
       }
    va_end(argp);
-   SHA1_Final(paramdigest,&sha);
+   unsigned char* tmp = gcry_md_read(sha, 0);
+   memcpy(paramdigest, tmp, 20);
+   gcry_md_close(sha);
    TSS_rawhmac(testhmac,key,keylen,TPM_HASH_SIZE,paramdigest,
                TPM_NONCE_SIZE,enonce,
                TPM_NONCE_SIZE,ononce,
@@ -244,7 +248,7 @@ uint32_t TSS_checkhmac2(const struct tpm_buffer *tb, uint32_t command,
    unsigned char testhmac1[20];
    unsigned char paramdigest[20];
    unsigned char testhmac2[20];
-   SHA_CTX  sha;
+   gcry_md_hd_t sha;
    unsigned int dlen;
    unsigned int dpos;
    va_list argp;
@@ -270,9 +274,9 @@ uint32_t TSS_checkhmac2(const struct tpm_buffer *tb, uint32_t command,
    continueflag2 = authdata2 - 1;
    enonce1      = continueflag1 - TPM_NONCE_SIZE;
    enonce2      = continueflag2 - TPM_NONCE_SIZE;
-   SHA1_Init(&sha);
-   SHA1_Update(&sha,&result,4);
-   SHA1_Update(&sha,&ordinal,4);
+   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
+   gcry_md_write(sha,&result,4);
+   gcry_md_write(sha,&ordinal,4);
    va_start(argp,keylen2);
    for (;;)
       {
@@ -282,9 +286,11 @@ uint32_t TSS_checkhmac2(const struct tpm_buffer *tb, uint32_t command,
       if (dpos + dlen > tb->used) {
         return ERR_BUFFER;
       }
-      SHA1_Update(&sha,buffer+dpos,dlen);
+      gcry_md_write(sha,buffer+dpos,dlen);
       }
-   SHA1_Final(paramdigest,&sha);
+   unsigned char* tmp = gcry_md_read(sha, 0);
+   memcpy(paramdigest, tmp, 20);
+   gcry_md_close(sha);
    TSS_rawhmac(testhmac1,key1,keylen1,TPM_HASH_SIZE,paramdigest,
                TPM_NONCE_SIZE,enonce1,
                TPM_NONCE_SIZE,ononce1,
@@ -328,14 +334,14 @@ uint32_t TSS_authhmac(unsigned char *digest, unsigned char *key, unsigned int ke
                  unsigned char *h1, unsigned char *h2, unsigned char h3,...)
    {
    unsigned char paramdigest[TPM_HASH_SIZE];
-   SHA_CTX  sha;
+   gcry_md_hd_t sha;
    unsigned int dlen;
    unsigned char *data;
    unsigned char c;
    
    va_list argp;
    
-   SHA1_Init(&sha);
+   gcry_md_open(&sha, GCRY_MD_SHA1, 0);
    if (h1 == NULL || h2 == NULL) return ERR_NULL_ARG;
    c = h3;
    va_start(argp,h3);
@@ -346,10 +352,12 @@ uint32_t TSS_authhmac(unsigned char *digest, unsigned char *key, unsigned int ke
       data = (unsigned char *)va_arg(argp,unsigned char *);
       if (data == NULL) return ERR_NULL_ARG;
 
-      SHA1_Update(&sha,data,dlen);
+      gcry_md_write(sha,data,dlen);
       }
    va_end(argp);
-   SHA1_Final(paramdigest,&sha);
+   unsigned char* tmp = gcry_md_read(sha, 0);
+   memcpy(paramdigest, tmp, 20);
+   gcry_md_close(sha);
 
    TSS_rawhmac(digest,key,keylen,TPM_HASH_SIZE,paramdigest,
                TPM_NONCE_SIZE,h1,
@@ -381,26 +389,27 @@ uint32_t TSS_authhmac(unsigned char *digest, unsigned char *key, unsigned int ke
 /****************************************************************************/
 uint32_t TSS_rawhmac(unsigned char *digest, const unsigned char *key, unsigned int keylen, ...)
    {
-   HMAC_CTX* hmac;
-   unsigned int dlen;
+   gcry_mac_hd_t hmac;
+   size_t dlen;
    unsigned char *data;
    va_list argp;
    
-   hmac = HMAC_CTX_new();
-   HMAC_Init_ex(hmac,key,keylen,EVP_sha1(),NULL);
+   gcry_mac_open(&hmac, GCRY_MAC_HMAC_SHA1, 0, NULL);
+   gcry_mac_setkey(hmac, key, keylen);
 
    va_start(argp,keylen);
    for (;;)
       {
-      dlen = (unsigned int)va_arg(argp,unsigned int);
+      dlen = (size_t)va_arg(argp,unsigned int);
       if (dlen == 0) break;
       data = (unsigned char *)va_arg(argp,unsigned char *);
       if (data == NULL) return ERR_NULL_ARG;
-      HMAC_Update(hmac,data,dlen);
+      gcry_mac_write(hmac,data,dlen);
       }
-   HMAC_Final(hmac,digest,&dlen);
-
-   HMAC_CTX_free(hmac);
+   dlen = 20;
+   gcry_mac_read(hmac, digest, &dlen);
+   
+   gcry_mac_close(hmac);
    va_end(argp);
    return 0;
    }

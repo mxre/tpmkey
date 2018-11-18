@@ -484,15 +484,8 @@ static uint32_t AES_CTR_crypt(unsigned char *data, uint32_t datalen,
                               unsigned char *output)
 {
 	uint32_t ret = 0;
-	AES_KEY aeskey;
 	unsigned char ivec[TPM_HASH_SIZE];
 	unsigned char work[TPM_NONCE_SIZE * 2];
-	int rc;
-		
-	rc = AES_set_encrypt_key(TSS_Session_GetAuth((session *)sess),
-	                         TPM_AES_BITS,
-	                         &aeskey);
-        (void)rc;
 
 	memcpy(&work[00], TSS_Session_GetENonce((session *)sess), TPM_NONCE_SIZE);
 	memcpy(&work[TPM_NONCE_SIZE],
@@ -502,9 +495,8 @@ static uint32_t AES_CTR_crypt(unsigned char *data, uint32_t datalen,
 	TPM_AES_ctr128_Encrypt(output,
 			       data, 
 			       datalen,
-			       &aeskey,
+			       TSS_Session_GetAuth((session *)sess), TPM_AES_BITS,
 			       ivec);
-
 	return ret;
 }             
 
