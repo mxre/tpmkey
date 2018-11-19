@@ -57,11 +57,11 @@ uint32_t g_num_transports;
 uint32_t (* g_transportFunction[TPM_MAX_TRANSPORTS])(struct tpm_buffer* tb, const char* msg);
 
 static session* g_transSession[TPM_MAX_TRANSPORTS];
+
 /**
  *  Get the appropriate filename for the transDigest to write out to
  *  for the TPM_INSTANCE that the library is currently using.
  **/
-
 static
 char* _get_transdigest_file(uint32_t handle) {
         char* filename = malloc(50);
@@ -81,7 +81,6 @@ char* _get_transdigest_file(uint32_t handle) {
  * Read the value of the transdigest for the TPM_INSTANCE that the
  * library is currently using.
  */
-
 static
 uint32_t _read_transdigest(uint32_t handle, unsigned char* digest) {
         uint32_t ret = 0;
@@ -112,7 +111,6 @@ uint32_t _read_transdigest(uint32_t handle, unsigned char* digest) {
  *  transdigest_new = SHA1(transdigest || data)
  * and write the new transdigest back into the file.
  */
-
 static
 uint32_t _extend_transdigest(uint32_t handle, struct tpm_buffer* data) {
         uint32_t ret = 0;
@@ -159,7 +157,6 @@ uint32_t _extend_transdigest(uint32_t handle, struct tpm_buffer* data) {
  * as part of the TPM_ExecuteTransport ordinal. Extend the TPM_INSTANCE's
  * given transport session's transdigest with the resulting value.
  */
-
 static
 uint32_t _calc_login_exec(unsigned char* H1,
                           uint32_t handle) {
@@ -188,7 +185,6 @@ uint32_t _calc_login_exec(unsigned char* H1,
  * as part of the TPM_ExecuteTransport ordinal. Extend the TPM_INSTANCE's
  * given transport session's transdigest with the resulting value.
  */
-
 static
 uint32_t _calc_logout_exec(unsigned char* H2,
                            TPM_CURRENT_TICKS* currentticks,
@@ -223,7 +219,6 @@ uint32_t _calc_logout_exec(unsigned char* H2,
  * as part of the TPM_ReleaseTransportSigned ordinal. Extend the TPM_INSTANCE's
  * given transport session's transdigest with the resulting value.
  */
-
 static
 uint32_t _calc_logout_release(uint32_t ordinal,
                               uint32_t locality,
@@ -263,7 +258,6 @@ uint32_t _calc_logout_release(uint32_t ordinal,
  * Permanently delete the TPM_INSTANCE's given transport session's
  * transdigest by removing its file.
  */
-
 static
 uint32_t _delete_transdigest(uint32_t handle) {
         uint32_t ret = 0;
@@ -280,7 +274,6 @@ uint32_t _delete_transdigest(uint32_t handle) {
  * Get the filename of the TPM_INSTANCE's given transport session's
  * current ticks file.
  */
-
 static
 char* _get_currentticks_filename(uint32_t handle)
 {
@@ -300,7 +293,6 @@ char* _get_currentticks_filename(uint32_t handle)
  * Read the current ticks from the TPM_INSTANCE's given transport
  * session's file.
  */
-
 static
 uint32_t _read_currentticks(uint32_t handle, TPM_CURRENT_TICKS* tct)
 {
@@ -339,7 +331,6 @@ uint32_t _read_currentticks(uint32_t handle, TPM_CURRENT_TICKS* tct)
  * Create the current ticks structure with 'second' and 'microsecond'
  * data taken from the given buffer at the given offset
  */
-
 static
 uint32_t _create_currentticks(uint32_t handle,
                               TPM_CURRENT_TICKS* tct,
@@ -368,7 +359,6 @@ uint32_t _create_currentticks(uint32_t handle,
  * Delete the TPM_INSTANCE's current ticks file associated with the
  * given transport session (handle).
  */
-
 static
 uint32_t _delete_currentticks(uint32_t handle) {
         uint32_t ret = 0;
@@ -625,258 +615,6 @@ int allowsTransport(uint32_t ord)
 #endif
         return 0;
 }
-
-#if 0
-
-uint32_t getNumHandles(uint32_t ord)
-{
-        if (ord <= TPM_ORD_TickStampBlob)
-                return td[ord].handles;
-#if 0
-        if (ord >= TPM_ORD_CreateInstance &&
-            ord <= TPM_ORD_GetMigrationDigest)
-                return td2[ord].handles;
-#endif
-        return 0;
-}
-
-uint32_t getNumRespHandles(uint32_t ord)
-{
-        if (ord <= TPM_ORD_TickStampBlob)
-                return td[ord].rhandles;
-#if 0
-        if (ord >= TPM_ORD_CreateInstance &&
-            ord <= TPM_ORD_GetMigrationDigest)
-                return td2[ord].rhandles;
-#endif
-        return 0;
-}
-
-static uint32_t TPM_EstablishTransport_Internal(uint32_t keyhandle,
-                                                unsigned char* usageAuth,
-                                                TPM_TRANSPORT_PUBLIC* ttp,
-                                                unsigned char* transAuth,
-                                                struct tpm_buffer* secret,
-                                                TPM_CURRENT_TICKS* currentticks,
-                                                session* transSess)
-{
-        STACK_TPM_BUFFER(tpmdata)
-        unsigned char nonceodd[TPM_NONCE_SIZE];
-        unsigned char authdata[TPM_NONCE_SIZE];
-        unsigned char transnonce[TPM_NONCE_SIZE];
-        unsigned char c = 0;
-        uint32_t ordinal_no = htonl(TPM_ORD_EstablishTransport);
-        uint32_t ret;
-        uint32_t keyhandle_no = htonl(keyhandle);
-        uint32_t encSecretSize_no;
-
-        STACK_TPM_BUFFER(transPub)
-        session sess;
-        uint32_t transhandle;
-        TPM_DIGEST transdigest;
-        uint32_t locality;
-        TPM_CURRENT_TICKS tct;
-
-        if (NULL == usageAuth ||
-            NULL == ttp ||
-            NULL == secret) {
-                return ERR_NULL_ARG;
-        }
-
-        encSecretSize_no  = htonl(secret->used);
-
-        if (keyhandle != TPM_KH_TRANSPORT) {
-
-                /* generate odd nonce */
-                TSS_gennonce(nonceodd);
-
-                /* Open OIAP Session */
-                ret = TSS_SessionOpen(SESSION_OSAP | SESSION_OIAP | SESSION_DSAP,
-                                      &sess,
-                                      usageAuth, TPM_ET_KEYHANDLE, keyhandle);
-                if (ret != 0)
-                        return ret;
-
-                /* calculate encrypted authorization value */
-
-                ret = TPM_WriteTransportPublic(&transPub, ttp);
-                if ((ret & ERR_MASK)) {
-                        return ret;
-                }
-
-                /* move Network byte order data to variable for hmac calculation */
-                ret = TSS_authhmac(authdata,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,TSS_Session_GetENonce(&sess),nonceodd,c,
-                                   TPM_U32_SIZE, &ordinal_no,
-                                   transPub.used, transPub.buffer,
-                                   TPM_U32_SIZE, &encSecretSize_no,
-                                   secret->used, secret->buffer,
-                                   0,0);
-
-                if (0 != ret) {
-                        TSS_SessionClose(&sess);
-                        return ret;
-                }
-                /* build the request buffer */
-                ret = TSS_buildbuff("00 c2 T l l % @ L % o %", &tpmdata,
-                                    ordinal_no,
-                                    keyhandle_no,
-                                    transPub.used, transPub.buffer,
-                                    secret->used, secret->buffer,
-                                    TSS_Session_GetHandle(&sess),
-                                    TPM_HASH_SIZE, nonceodd,
-                                    c,
-                                    TPM_HASH_SIZE,authdata);
-                if ((ret & ERR_MASK) != 0) {
-                        TSS_SessionClose(&sess);
-                        return ret;
-                }
-
-                if ((ttp->transAttributes & TPM_TRANSPORT_LOG)) {
-                        _calc_transdigest(TPM_ORD_EstablishTransport,
-                                          ttp,
-                                          secret,
-                                          &transdigest);
-                }
-
-                /* transmit the request buffer to the TPM device and read the reply */
-                ret = TPM_Transmit(&tpmdata,"EstablishTransport - AUTH1");
-
-                if ((ttp->transAttributes & TPM_TRANSPORT_EXCLUSIVE) == 0)
-                        TSS_SessionClose(&sess);
-
-                if (ret != 0) {
-                        return ret;
-                }
-                /* check the HMAC in the response */
-                ret = TSS_checkhmac1(&tpmdata,ordinal_no,nonceodd,TSS_Session_GetAuth(&sess),TPM_HASH_SIZE,
-                                     TPM_U32_SIZE + 32 + TPM_NONCE_SIZE, TPM_DATA_OFFSET + TPM_U32_SIZE,
-                                     0,0);
-
-                if (0 != ret) {
-                        return ret;
-                }
-        } else {
-                /* calculate encrypted authorization value */
-
-                ret = TPM_WriteTransportPublic(&transPub, ttp);
-                if ((ret & ERR_MASK)) {
-                        return ret;
-                }
-
-                /* build the request buffer */
-                ret = TSS_buildbuff("00 c1 T l l % @", &tpmdata,
-                                    ordinal_no,
-                                    keyhandle_no,
-                                    transPub.used, transPub.buffer,
-                                    secret->used, secret->buffer);
-                if ((ret & ERR_MASK) != 0) {
-                        TSS_SessionClose(&sess);
-                        return ret;
-                }
-
-                if ((ttp->transAttributes & TPM_TRANSPORT_LOG)) {
-                        _calc_transdigest(TPM_ORD_EstablishTransport,
-                                          ttp,
-                                          secret,
-                                          &transdigest);
-                }
-
-                /* transmit the request buffer to the TPM device and read the reply */
-                ret = TPM_Transmit(&tpmdata,"EstablishTransport - AUTH0");
-
-        }
-
-        TPM_ReadCurrentTicks(&tpmdata,
-                             TPM_DATA_OFFSET + TPM_U32_SIZE + TPM_U32_SIZE,
-                             &tct);
-
-        if (NULL != currentticks) {
-                memcpy(currentticks, &tct, sizeof(tct));
-        }
-
-        ret = tpm_buffer_load32(&tpmdata, TPM_DATA_OFFSET, &transhandle);
-        if ((ret & ERR_MASK)) {
-                return ret;
-        }
-        ret = tpm_buffer_load32(&tpmdata,
-                                TPM_DATA_OFFSET + TPM_U32_SIZE,
-                                &locality);
-        if ((ret & ERR_MASK)) {
-                return ret;
-        }
-        memcpy(transnonce,
-               &tpmdata.buffer[TPM_DATA_OFFSET + TPM_U32_SIZE + TPM_U32_SIZE + 32],
-               TPM_NONCE_SIZE);
-
-        TSS_Session_CreateTransport(transSess,
-                                    transAuth, transhandle, transnonce);
-
-        if ((ttp->transAttributes & TPM_TRANSPORT_LOG)) {
-                _store_transdigest(transhandle, transdigest);
-                _calc_logout_esttrans(0,
-                                      TPM_ORD_EstablishTransport,
-                                      locality,
-                                      &tct,
-                                      transnonce,
-                                      transhandle);
-        }
-        _save_currentticks(transhandle, &tct);
-
-        return 0;
-}
-
-uint32_t TPM_EstablishTransport(uint32_t keyhandle,
-                                unsigned char* usageAuth,
-                                TPM_TRANSPORT_PUBLIC* ttp,
-                                unsigned char* transAuth,
-                                struct tpm_buffer* secret,
-                                TPM_CURRENT_TICKS* currentticks,
-                                session* transSess)
-{
-        uint32_t ret = 0;
-
-        ret = needKeysRoom(keyhandle, 0, 0, 0);
-        if (ret != 0)
-                return ret;
-
-        return TPM_EstablishTransport_Internal(keyhandle,
-                                               usageAuth,
-                                               ttp,
-                                               transAuth,
-                                               secret,
-                                               currentticks,
-                                               transSess);
-}
-
-uint32_t TPM_EstablishTransport_UseRoom(uint32_t keyhandle,
-                                        unsigned char* usageAuth,
-                                        TPM_TRANSPORT_PUBLIC* ttp,
-                                        unsigned char* transAuth,
-                                        struct tpm_buffer* secret,
-                                        TPM_CURRENT_TICKS* currentticks,
-                                        session* transSess)
-{
-        uint32_t ret = 0;
-        uint32_t replaced_keyhandle = 0;
-
-        // some commands may not call needKeysRoom themselves, so
-        // we may replace a key here, which is fine. We just cannot
-        // put the original key back in since then the transport
-        // will not work.
-        ret = needKeysRoom_Stacked(keyhandle, &replaced_keyhandle);
-        if (ret != 0)
-                return ret;
-
-        return TPM_EstablishTransport_Internal(keyhandle,
-                                               usageAuth,
-                                               ttp,
-                                               transAuth,
-                                               secret,
-                                               currentticks,
-                                               transSess);
-}
-
-#endif
 
 void _TPM_getTransportAlgIdEncScheme(TPM_ALGORITHM_ID* algId,
                                      TPM_ENC_SCHEME* encScheme)

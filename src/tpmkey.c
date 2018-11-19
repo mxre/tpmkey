@@ -174,7 +174,7 @@ static bool efivar_read_var(const EFI_GUID* guid, const char* name, char* buffer
 }
 
 // convert default fstab directives to UDEV type field names
-static const char* get_udev_type(const char* type) {
+static inline const char* get_udev_type(const char* type) {
         if (strcmp("PARTUUID", type) == 0) {
                 return "ID_PART_ENTRY_UUID";
         } else if (strcmp("UUID", type) == 0) {
@@ -342,7 +342,7 @@ cleanup_udev:
         return ret;
 }
 
-void init_gcrypt() {
+static inline void init_gcrypt() {
         if (!gcry_check_version (GCRYPT_VERSION)) {
                 fputs("libgcrypt version mismatch: compiled for version " GCRYPT_VERSION "\n", stderr);
                 exit(2);
@@ -435,7 +435,6 @@ static bool unseal_key(const char* keyfilename) {
 }
 
 __attribute__((noreturn))
-
 static void signal_abort(int sig) {
         if (umount2(MOUNT_POINT, MNT_DETACH) != 0) {
                 fprintf(stderr, "Could not unmount ESP: %m\n");

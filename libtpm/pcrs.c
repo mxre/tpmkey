@@ -62,7 +62,6 @@
 /* outDigest is pointing to a buffer the size of TPM_HASH_SIZE (-20) that   */
 /*           will contain the new value of the PCR register upon return     */
 /*           (may be NULL)                                                  */
-
 /****************************************************************************/
 uint32_t TPM_Extend(uint32_t pcrIndex,
                     unsigned char* event,
@@ -110,7 +109,6 @@ uint32_t TPM_Extend(uint32_t pcrIndex,
 /* tpc       is a pointer to an area to receive a pcrcomposite structure    */
 /* signature is a pointer to an area to receive the signature               */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TPM_Quote(uint32_t keyhandle,
                    unsigned char* keyauth,
@@ -287,7 +285,6 @@ uint32_t TPM_Quote(uint32_t keyhandle,
 /* bloblen   is a pointer to an integer which will receive the length       */
 /*           of the signed data                                             */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TPM_Quote2(uint32_t keyhandle,
                     TPM_PCR_SELECTION* selection,
@@ -465,7 +462,6 @@ uint32_t TPM_Quote2(uint32_t keyhandle,
 /*                                                                          */
 /*  Read PCR value                                                          */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TPM_PcrRead(uint32_t pcrindex, unsigned char* pcrvalue)
 {
@@ -488,7 +484,6 @@ uint32_t TPM_PcrRead(uint32_t pcrindex, unsigned char* pcrvalue)
 /*                                                                          */
 /*  Create PCR_INFO structure using current PCR values                      */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char* pcrinfo, uint32_t* len)
 {
@@ -572,7 +567,6 @@ uint32_t TSS_GenPCRInfo(uint32_t pcrmap, unsigned char* pcrinfo, uint32_t* len)
 /*                                                                          */
 /* pcrmap : The selection of PCRs to reset as 32 bit bitmap                 */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TPM_PCRReset(TPM_PCR_SELECTION* selection)
 {

@@ -70,7 +70,6 @@ void TPM_DetermineSessionEncryption(const session* sess, int* use_xor)
 /*                                                                          */
 /* Open an OIAP session                                                     */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_OIAPopen(uint32_t* handle, unsigned char* enonce)
 {
@@ -103,7 +102,6 @@ uint32_t TSS_OIAPopen(uint32_t* handle, unsigned char* enonce)
 /*                                                                          */
 /* Close an OIAP session                                                    */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_OIAPclose(uint32_t handle)
 {
@@ -114,7 +112,6 @@ uint32_t TSS_OIAPclose(uint32_t handle)
 /*                                                                          */
 /* Open an OSAP session                                                     */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_OSAPopen(osapsess* sess, const unsigned char* key, uint16_t etype, uint32_t evalue)
 {
@@ -158,7 +155,6 @@ uint32_t TSS_OSAPopen(osapsess* sess, const unsigned char* key, uint16_t etype, 
 /*                                                                          */
 /* Close an OSAP session                                                    */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_OSAPclose(osapsess* sess)
 {
@@ -174,7 +170,6 @@ uint32_t TSS_OSAPclose(osapsess* sess)
 /*                                                                          */
 /* Open a DSAP session                                                     */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_DSAPopen(dsapsess* sess,
                       unsigned char* key,
@@ -232,7 +227,6 @@ uint32_t TSS_DSAPopen(dsapsess* sess,
 /*                                                                          */
 /* Close a DSAP session                                                     */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_DSAPclose(dsapsess* sess)
 {
@@ -249,7 +243,6 @@ uint32_t TSS_DSAPclose(dsapsess* sess)
 /*                                                                          */
 /* Terminate the Handle Opened by TPM_OIAPOpen, or TPM_OSAPOpen             */
 /*                                                                          */
-
 /****************************************************************************/
 uint32_t TSS_HANDclose(uint32_t handle, TPM_RESOURCE_TYPE rt)
 {
